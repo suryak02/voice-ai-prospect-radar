@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum BusinessCategory {
+  dental
+  aesthetics
+  veterinary
+  physiotherapy
+  chiropractor
+  optometry
+  dermatology
+  podiatry
+  medspa
+  hair_salon
+  barber
+  nail_salon
+  spa
+  plumber
+  electrician
+  hvac
+  auto_repair
+  legal
+  accountant
+  estate_agent
+  insurance
+  retail
+  restaurant
+  other
+}
+
+enum BusinessStatus {
+  new
+  needs_review
+  approved_for_contact
+  contacted
+  not_fit
+}
+
+enum TicketStatus {
+  open
+  reviewed
+  rejected
+}
+
+model Business {
+  id                   String           @id
+  googlePlaceId        String?          @unique
+  name                 String
+  category             BusinessCategory
+  address              String
+  borough              String
+  latitude             Float
+  longitude            Float
+  phone                String?
+  website              String?
+  rating               Float?
+  reviewCount          Int?
+  hasWebsite           Boolean
+  hasOnlineBooking     Boolean
+  hasVisiblePhone      Boolean
+  appointmentBased     Boolean
+  highValueService     Boolean
+  reviewPainSignals    String[]
+  voiceAiScore         Int
+  scoreBreakdown       Json
+  recommendedUseCase   String
+  reasoning            String
+  aiSummary            String?
+  aiAngle              String?
+  aiCategory           String?
+  aiModel              String?
+  aiDepth              String?
+  aiEnrichedAt         DateTime?
+  status               BusinessStatus   @default(new)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  tickets              Ticket[]
+
+  @@index([category])
+  @@index([borough])
+  @@index([voiceAiScore])
+  @@map("businesses")
+}
+
+model Ticket {
+  id           String       @id
+  businessId   String
+  businessName String
+  score        Int
+  status       TicketStatus @default(open)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  business     Business     @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([status])
+  @@map("tickets")
+}
