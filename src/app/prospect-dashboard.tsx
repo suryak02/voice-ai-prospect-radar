@@ -27,7 +27,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
   const [minimumScore, setMinimumScore] = useState(0);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [searchArea, setSearchArea] = useState("East London");
-  const [targetCategories, setTargetCategories] = useState<BusinessCategory[]>(["dental"]);
+  const [targetCategories, setTargetCategories] = useState<BusinessCategory[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [searchMessage, setSearchMessage] = useState("Showing the prepared London demo dataset. Run a targeted search to personalize the territory.");
@@ -112,13 +112,14 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
   const toggleTargetCategory = useCallback((category: BusinessCategory) => {
     setTargetCategories((current) => {
-      if (current.includes(category)) {
-        const next = current.filter((value) => value !== category);
-        return next.length ? next : current; // always keep at least one vertical
-      }
+      if (current.includes(category)) return current.filter((value) => value !== category);
       if (current.length >= MAX_SEARCH_CATEGORIES) return current;
       return [...current, category];
     });
+  }, []);
+
+  const showAllTargetCategories = useCallback(() => {
+    setTargetCategories([]);
   }, []);
 
   const selectBusiness = useCallback((business: Business) => {
@@ -153,9 +154,41 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
   async function runSearch() {
     setSearchStatus("loading");
-    setSearchMessage("Searching validated public business data. This is rate-limited and cached to control API cost.");
+    setSearchMessage(
+      targetCategories.length === 0
+        ? "Loading the saved prospect map across all verticals. This does not use Google Places or AI tokens."
+        : "Searching validated public business data. This is rate-limited and cached to control API cost.",
+    );
 
     try {
+      if (targetCategories.length === 0) {
+        const response = await fetch("/api/businesses");
+        const data = (await response.json()) as { businesses?: Business[]; error?: string };
+        if (!response.ok || !data.businesses?.length) throw new Error(data.error ?? "No saved businesses returned.");
+
+        const normalizedArea = searchArea.trim().toLowerCase();
+        const nextBusinesses = normalizedArea
+          ? data.businesses.filter((business) => {
+              const searchable = `${business.name} ${business.borough} ${business.address} ${business.category}`.toLowerCase();
+              return searchable.includes(normalizedArea) || normalizedArea.includes(business.borough.toLowerCase());
+            })
+          : data.businesses;
+
+        const restoredBusinesses = nextBusinesses.length ? nextBusinesses : data.businesses;
+        setBusinesses(restoredBusinesses);
+        selectBusiness(restoredBusinesses[0]);
+        setCategoryFilter("all");
+        setMinimumScore(0);
+        setFocusSelectedOnly(false);
+        setSearchStatus("success");
+        setSearchMessage(
+          nextBusinesses.length
+            ? `Showing ${nextBusinesses.length} saved prospects across all verticals for ${searchArea}. No live API call used.`
+            : `No exact saved match for ${searchArea}, so the full saved prospect map is back. No live API call used.`,
+        );
+        return;
+      }
+
       const response = await fetch("/api/prospect-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -293,11 +326,11 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                   disabled={searchStatus === "loading"}
                   className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-slate-500 sm:self-stretch"
                 >
-                  {searchStatus === "loading" ? "Searching..." : "Search live data"}
+                  {searchStatus === "loading" ? "Searching..." : targetCategories.length === 0 ? "Show saved map" : "Search live data"}
                 </button>
               </div>
 
-              <CategorySearchPicker selected={targetCategories} onToggle={toggleTargetCategory} />
+              <CategorySearchPicker selected={targetCategories} onToggle={toggleTargetCategory} onShowAll={showAllTargetCategories} />
             </form>
           </div>
 
@@ -482,19 +515,36 @@ function KpiCard({ label, value, detail }: { label: string; value: string; detai
 function CategorySearchPicker({
   selected,
   onToggle,
+  onShowAll,
 }: {
   selected: BusinessCategory[];
   onToggle: (category: BusinessCategory) => void;
+  onShowAll: () => void;
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Business types</span>
         <span className="text-[11px] text-slate-500">
-          {selected.length}/{MAX_SEARCH_CATEGORIES} selected
+          {selected.length === 0 ? "All saved verticals" : `${selected.length}/${MAX_SEARCH_CATEGORIES} selected`}
         </span>
       </div>
       <div className="mt-3 max-h-44 space-y-3 overflow-y-auto pr-1">
+        <button
+          type="button"
+          onClick={onShowAll}
+          aria-pressed={selected.length === 0}
+          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+            selected.length === 0
+              ? "border-emerald-300/40 bg-emerald-300/15 text-emerald-100"
+              : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
+          }`}
+        >
+          All saved verticals
+        </button>
+        <p className="text-[11px] leading-4 text-slate-500">
+          Use all to browse the saved map without spending live search calls. Pick up to {MAX_SEARCH_CATEGORIES} types when you want a fresh Google Places search.
+        </p>
         {categoryGroups.map((group) => (
           <div key={group.group}>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">{group.group}</p>
@@ -510,7 +560,9 @@ function CategorySearchPicker({
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                       isActive
                         ? "border-indigo-300/40 bg-indigo-300/15 text-indigo-100"
-                        : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
+                        : selected.length >= MAX_SEARCH_CATEGORIES
+                          ? "border-white/10 bg-black/10 text-slate-600"
+                          : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
                     }`}
                   >
                     {option.label}
