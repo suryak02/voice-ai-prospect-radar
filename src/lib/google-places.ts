@@ -1,3 +1,4 @@
+import { getCache, setCache, cleanupMemoryCache } from "@/lib/cache";
 import { CATEGORY_META, categorySearchTerm, inferCategoryFromText } from "@/lib/categories";
 import { calculateVoiceAiScore } from "@/lib/scoring";
 import { isInUk, UK_BOUNDS } from "@/lib/uk-bounds";
@@ -23,7 +24,7 @@ const FIELD_MASK = [
 const MAX_RESULTS = 20;
 // Safety cap on how many verticals a single search fans out to (bounds API cost).
 const MAX_CATEGORIES = 6;
-const CACHE_TTL_MS = 1000 * 60 * 30;
+const CACHE_TTL_SECONDS = 60 * 30;
 
 // Bounding box covering the UK (incl. Northern Ireland). Used as a hard
 // locationRestriction so an ambiguous query can't return non-UK businesses and
@@ -32,8 +33,6 @@ const UK_RECTANGLE = {
   low: { latitude: UK_BOUNDS.minLat, longitude: UK_BOUNDS.minLng },
   high: { latitude: UK_BOUNDS.maxLat, longitude: UK_BOUNDS.maxLng },
 };
-
-const searchCache = new Map<string, { expiresAt: number; businesses: Business[] }>();
 
 type GooglePlace = {
   id: string;
@@ -67,10 +66,11 @@ export async function searchGooglePlacesProspects(
   if (!apiKey) return { businesses: [], cached: false, errors: ["GOOGLE_MAPS_API_KEY / GOOGLE_PLACES_API_KEY not set at runtime"] };
 
   const categories = input.categories.slice(0, MAX_CATEGORIES);
-  const cacheKey = `${input.area.toLowerCase()}::${[...categories].sort().join(",")}`;
-  const cached = searchCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) {
-    return { businesses: cached.businesses, cached: true, errors: [] };
+  const cacheKey = `places:${input.area.trim().toLowerCase()}::${[...categories].sort().join(",")}`;
+  cleanupMemoryCache();
+  const cached = await getCache<Business[]>(cacheKey);
+  if (cached.value) {
+    return { businesses: cached.value, cached: true, errors: [] };
   }
 
   const errors: string[] = [];
@@ -111,7 +111,7 @@ export async function searchGooglePlacesProspects(
   // Only cache successful, non-empty results — otherwise a transient failure
   // (e.g. a temporary API error) poisons the cache with an empty list for 30 min.
   if (sorted.length > 0 && errors.length === 0) {
-    searchCache.set(cacheKey, { expiresAt: Date.now() + CACHE_TTL_MS, businesses: sorted });
+    await setCache(cacheKey, sorted, CACHE_TTL_SECONDS);
   }
   return { businesses: sorted, cached: false, errors };
 }

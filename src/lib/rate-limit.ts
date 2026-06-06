@@ -1,5 +1,5 @@
 import { Ratelimit } from "@upstash/ratelimit";
-import { Redis } from "@upstash/redis";
+import { getRedis } from "@/lib/redis";
 
 // Shared rate limiting. When Upstash Redis is configured, limits are enforced
 // globally across all serverless instances (the correct behaviour). When it
@@ -9,17 +9,10 @@ import { Redis } from "@upstash/redis";
 type RateLimitOptions = { key: string; limit: number; windowMs: number };
 type RateLimitResult = { allowed: boolean; remaining: number; resetAt: number };
 
-const redis =
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      })
-    : null;
-
 // One Upstash limiter per (limit, windowMs), created lazily and cached.
 const limiterCache = new Map<string, Ratelimit>();
 function getLimiter(limit: number, windowMs: number): Ratelimit | null {
+  const redis = getRedis();
   if (!redis) return null;
   const cacheKey = `${limit}:${windowMs}`;
   let limiter = limiterCache.get(cacheKey);
@@ -75,7 +68,7 @@ function inMemoryCheck({ key, limit, windowMs }: RateLimitOptions): RateLimitRes
 
 export function cleanupRateLimitBuckets() {
   const now = Date.now();
-  for (const [key, entry] of buckets.entries()) {
+  for (const [key, entry] of Array.from(buckets.entries())) {
     if (entry.resetAt <= now) buckets.delete(key);
   }
 }

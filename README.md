@@ -8,7 +8,7 @@
 
 ![Voice AI Prospect Map — demo](docs/demo.gif)
 
-Built with **Next.js 16 · React 19 · TypeScript · Tailwind v4 · Prisma + Supabase Postgres · Google Places/Maps · OpenAI**, deployed on Vercel.
+Built with **Next.js 16 · React 19 · TypeScript · Tailwind v4 · Prisma + Supabase Postgres · Google Places/Maps · OpenAI · Upstash Redis**, deployed on Vercel.
 
 ---
 
@@ -38,6 +38,8 @@ prospect — including an admin-only "deep research" mode that reads the busines
   public signals; tunable and re-runnable across the dataset (`npm run db:rescore`).
 - **Cost-controlled AI** — OpenAI enrichment is cached in Postgres with a weekly cooldown,
   and the expensive deep-research tier is gated to admin so general viewers can't run up spend.
+- **Redis-backed protection** — Upstash powers shared rate limits and a short-lived Google
+  Places search cache to reduce repeated API calls across Vercel serverless instances.
 - **Performance** — parallelized external API calls, viewport-culled map markers, memoized rendering.
 - **Security** — edge-proxy auth with two tiers, and a **split Google API key** setup (a
   server key that's never exposed for Places search + a referrer-locked browser key for the map).
@@ -55,7 +57,7 @@ tiering run in a Next.js 16 **Proxy** (`src/proxy.ts`).
 
 Next.js 16 (App Router, Turbopack) · React 19 · TypeScript · Tailwind CSS v4 ·
 Prisma 7 + `@prisma/adapter-pg` → Supabase Postgres · Google Places API (New) +
-Google Maps JS · OpenAI (`gpt-4o-mini`) · Vercel.
+Google Maps JS · OpenAI (`gpt-4o-mini`) · Upstash Redis · Vercel.
 
 ## Local development
 

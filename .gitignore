@@ -35,6 +35,7 @@ yarn-error.log*
 
 # private local operator notes
 LOCAL_DEMO_SETUP.md
+.claude/
 
 # vercel
 .vercel
