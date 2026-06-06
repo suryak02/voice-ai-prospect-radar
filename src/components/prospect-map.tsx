@@ -6,7 +6,7 @@ import { memo, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { MapControls, type MapControlsProps } from "@/components/map-controls";
 import { useTheme } from "@/components/theme-provider";
 import { getScoreColorClasses, getScoreLabel } from "@/lib/scoring";
-import type { Business } from "@/lib/types";
+import type { Business, Ticket } from "@/lib/types";
 
 type MapViewport = { north: number; south: number; east: number; west: number };
 
@@ -19,6 +19,7 @@ type ProspectMapProps = {
   selectedBusinessId: string;
   onSelectBusiness: (business: Business) => void;
   controls?: MapControlsProps;
+  ticketStatusByBusinessId?: Map<string, Ticket["status"]>;
 };
 
 const mapBounds = {
@@ -64,7 +65,7 @@ function positionForBusiness(business: Business) {
   };
 }
 
-export function ProspectMap({ businesses, selectedBusinessId, onSelectBusiness, controls }: ProspectMapProps) {
+export function ProspectMap({ businesses, selectedBusinessId, onSelectBusiness, controls, ticketStatusByBusinessId }: ProspectMapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const selectedBusiness = businesses.find((business) => business.id === selectedBusinessId) ?? businesses[0];
 
@@ -77,6 +78,7 @@ export function ProspectMap({ businesses, selectedBusinessId, onSelectBusiness, 
         selectedBusiness={selectedBusiness}
         onExpand={() => setIsExpanded(true)}
         variant="embedded"
+        ticketStatusByBusinessId={ticketStatusByBusinessId}
       />
 
       {isExpanded && (
@@ -94,6 +96,7 @@ export function ProspectMap({ businesses, selectedBusinessId, onSelectBusiness, 
               selectedBusiness={selectedBusiness}
               onExpand={() => setIsExpanded(false)}
               variant="expanded"
+              ticketStatusByBusinessId={ticketStatusByBusinessId}
             />
           </div>
         </div>
@@ -117,6 +120,7 @@ function MapCanvas({
   selectedBusiness,
   onExpand,
   variant,
+  ticketStatusByBusinessId,
 }: MapCanvasProps) {
   const isExpanded = variant === "expanded";
   const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -139,7 +143,7 @@ function MapCanvas({
     for (const business of businesses) {
       bounds.extend({ lat: business.latitude, lng: business.longitude });
     }
-    map.fitBounds(bounds, 64);
+    map.fitBounds(bounds, window.innerWidth < 640 ? 36 : 64);
     // Clamp the auto-fit once it settles: a tight cluster shouldn't slam to
     // street level, and a single result still gets a close view.
     const listener = google.maps.event.addListenerOnce(map, "idle", () => {
@@ -190,7 +194,7 @@ function MapCanvas({
       className={`relative overflow-hidden border border-white/10 bg-[#07090d] shadow-2xl shadow-black/30 ${
         isExpanded
           ? "h-full rounded-[2rem]"
-          : "min-h-[680px] rounded-[2rem] xl:sticky xl:top-5 xl:self-start xl:h-[calc(100vh-2.5rem)] xl:min-h-[600px]"
+          : "min-h-[460px] rounded-[2rem] sm:min-h-[560px] lg:min-h-[640px] xl:sticky xl:top-5 xl:self-start xl:h-[calc(100vh-2.5rem)] xl:min-h-[600px]"
       }`}
     >
       {canRenderGoogleMap ? (
@@ -228,6 +232,7 @@ function MapCanvas({
                 business={business}
                 isSelected={business.id === selectedBusinessId}
                 isExpanded={isExpanded}
+                ticketStatus={ticketStatusByBusinessId?.get(business.id)}
                 onSelectBusiness={onSelectBusiness}
               />
             </OverlayView>
@@ -248,6 +253,7 @@ function MapCanvas({
               business={business}
               isSelected={business.id === selectedBusinessId}
               isExpanded={isExpanded}
+              ticketStatus={ticketStatusByBusinessId?.get(business.id)}
               onSelectBusiness={onSelectBusiness}
               style={positionForBusiness(business)}
             />
@@ -256,12 +262,12 @@ function MapCanvas({
       )}
       <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_bottom,rgba(2,6,23,0.05),rgba(2,6,23,0.24))]" />
 
-      <div className="absolute left-5 top-5 z-20 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 shadow-2xl backdrop-blur-xl sm:left-8 sm:top-8">
+      <div className="absolute left-3 top-3 z-20 max-w-[calc(100%-5.5rem)] rounded-2xl border border-white/10 bg-black/45 px-3 py-2.5 shadow-2xl backdrop-blur-xl sm:left-8 sm:top-8 sm:px-4 sm:py-3">
         <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/80">Live prospect layer</p>
         <h2 className="mt-1 text-lg font-semibold tracking-tight text-white sm:text-xl">
           {regionLabel}
         </h2>
-        <p className="mt-1 max-w-sm text-xs leading-5 text-slate-400 sm:text-sm">
+        <p className="mt-1 hidden max-w-sm text-xs leading-5 text-slate-400 sm:block sm:text-sm">
           {isExpanded
             ? "Expanded command view for scanning territories and opening review tickets."
             : "Tap expand for a Google Maps-style dedicated scanning experience."}
@@ -271,14 +277,14 @@ function MapCanvas({
       <button
         type="button"
         onClick={onExpand}
-        className="absolute right-5 top-5 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-white shadow-2xl backdrop-blur-xl transition hover:bg-white/[0.1] sm:right-8 sm:top-8"
+        className="absolute right-3 top-3 z-20 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.08] px-3 py-2 text-xs font-semibold text-white shadow-2xl backdrop-blur-xl transition hover:bg-white/[0.12] sm:right-8 sm:top-8 sm:px-4 sm:text-sm"
       >
         {isExpanded ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         {isExpanded ? "Close map" : "Expand map"}
       </button>
 
-      <div className="absolute bottom-5 left-5 right-5 z-20 flex flex-col gap-3 sm:bottom-8 sm:left-8 sm:right-8 lg:flex-row lg:items-end lg:justify-between">
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/45 p-3 text-xs text-slate-300 shadow-2xl backdrop-blur-xl sm:flex sm:w-fit sm:grid-cols-none">
+      <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-col gap-3 sm:bottom-8 sm:left-8 sm:right-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="hidden grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/45 p-3 text-xs text-slate-300 shadow-2xl backdrop-blur-xl sm:grid sm:flex sm:w-fit sm:grid-cols-none">
           <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-slate-500" />0-2 poor</span>
           <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-sky-500" />3-4 low</span>
           <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-full bg-amber-400" />5-6 promising</span>
@@ -287,7 +293,7 @@ function MapCanvas({
         </div>
 
         {selectedBusiness && (
-          <div className="rounded-2xl border border-white/10 bg-black/45 p-4 shadow-2xl backdrop-blur-xl lg:w-80">
+          <div className="rounded-2xl border border-white/10 bg-black/55 p-3 shadow-2xl backdrop-blur-xl sm:p-4 lg:w-80">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">Selected</p>
             <div className="mt-2 flex items-start justify-between gap-3">
               <div>
@@ -310,21 +316,30 @@ type ProspectMarkerProps = {
   isSelected: boolean;
   isExpanded: boolean;
   onSelectBusiness: (business: Business) => void;
+  ticketStatus?: Ticket["status"];
   style?: CSSProperties;
 };
 
-function ProspectMarkerBase({ business, isSelected, isExpanded, onSelectBusiness, style }: ProspectMarkerProps) {
+function ProspectMarkerBase({ business, isSelected, isExpanded, onSelectBusiness, ticketStatus, style }: ProspectMarkerProps) {
   return (
     <button
       type="button"
       onClick={() => onSelectBusiness(business)}
       className={`${style ? "absolute" : "relative"} z-10 -translate-x-1/2 -translate-y-1/2 rounded-full ring-4 transition hover:scale-110 focus:outline-none focus:ring-8 ${getScoreColorClasses(
         business.voiceAiScore,
-      )} ${isSelected ? "scale-125" : ""}`}
+      )} ${isSelected ? "scale-[1.45] ring-8 ring-indigo-200/70" : ""} ${ticketStatus === "open" ? "outline outline-2 outline-emerald-300/80" : ""} ${ticketStatus === "rejected" ? "outline outline-2 outline-rose-300/80" : ""}`}
       style={style}
       aria-label={`Select ${business.name}, score ${business.voiceAiScore}`}
     >
-      <span className={`grid place-items-center font-black ${isExpanded ? "h-14 w-14 text-base" : "h-11 w-11 text-sm"}`}>
+      <span
+        className={`grid place-items-center font-black ${isExpanded ? "h-14 w-14 text-base" : "h-11 w-11 text-sm"} ${
+          ticketStatus === "open"
+            ? "text-emerald-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
+            : ticketStatus === "rejected"
+              ? "text-rose-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
+              : ""
+        }`}
+      >
         {business.voiceAiScore}
       </span>
       {isSelected && (
@@ -334,7 +349,7 @@ function ProspectMarkerBase({ business, isSelected, isExpanded, onSelectBusiness
             <span>
               {business.name}
               <span className="mt-1 block text-[11px] font-medium text-slate-400">
-                {getScoreLabel(business.voiceAiScore)} · {business.borough}
+                {ticketStatus === "open" ? "Open ticket" : ticketStatus === "rejected" ? "Marked not fit" : getScoreLabel(business.voiceAiScore)} · {business.borough}
               </span>
             </span>
           </span>

@@ -102,3 +102,5 @@ Only variables prefixed with `NEXT_PUBLIC_` are bundled into browser code.
 ## Docs
 
 * `ROADMAP.md`: future ideas
+* `PROJECT_CONTEXT.md`: private working context, not meant for the public repo
+* `docs/HANDOFF.md`: private agent handoff, not meant for the public repo

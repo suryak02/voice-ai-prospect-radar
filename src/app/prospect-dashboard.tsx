@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowUpRight, Filter, History, Search } from "lucide-react";
+import { ArrowUpRight, Eye, EyeOff, Filter, History, Search } from "lucide-react";
 import { BusinessDetailPanel } from "@/components/business-detail-panel";
 import { ProspectMap } from "@/components/prospect-map";
 import { TicketQueue } from "@/components/ticket-queue";
@@ -32,6 +32,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [searchMessage, setSearchMessage] = useState("Showing the prepared London demo dataset. Run a targeted search to personalize the territory.");
   const [viewedProspects, setViewedProspects] = useState<ViewedProspect[]>([]);
+  const [focusSelectedOnly, setFocusSelectedOnly] = useState(false);
 
   useEffect(() => {
     const loadViewedProspects = window.setTimeout(() => {
@@ -85,7 +86,20 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
   }, [businesses, categoryFilter, minimumScore]);
 
   const selectedBusiness =
-    filteredBusinesses.find((business) => business.id === selectedBusinessId) ?? filteredBusinesses[0] ?? businesses[0];
+    businesses.find((business) => business.id === selectedBusinessId) ?? filteredBusinesses[0] ?? businesses[0];
+
+  const mapBusinesses = useMemo(() => {
+    if (!focusSelectedOnly || !selectedBusiness) return filteredBusinesses;
+    return [selectedBusiness];
+  }, [filteredBusinesses, focusSelectedOnly, selectedBusiness]);
+
+  const ticketStatusByBusinessId = useMemo(() => {
+    const statusByBusinessId = new Map<string, Ticket["status"]>();
+    for (const ticket of tickets) {
+      if (!statusByBusinessId.has(ticket.businessId)) statusByBusinessId.set(ticket.businessId, ticket.status);
+    }
+    return statusByBusinessId;
+  }, [tickets]);
 
   const highPriorityCount = businesses.filter((business) => business.voiceAiScore >= 7).length;
   const averageScore = businesses.length
@@ -157,6 +171,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
       selectBusiness(data.businesses[0]);
       setCategoryFilter("all");
       setMinimumScore(0);
+      setFocusSelectedOnly(false);
       setSearchStatus("success");
       const sourceLabel = data.source === "google_places_live" ? "live Google Places" : data.source === "google_places_cache" ? "cached Google Places" : "stored fallback";
       const verticalsLabel = targetCategories.length === 1 ? CATEGORY_META[targetCategories[0]].label : `${targetCategories.length} verticals`;
@@ -200,6 +215,14 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
     setTickets((currentTickets) => [ticket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)]);
     persistTicket(ticket);
+  }
+
+  function selectTicket(ticket: Ticket) {
+    const matchingBusiness = businesses.find((business) => business.id === ticket.businessId);
+    if (!matchingBusiness) return;
+    setCategoryFilter("all");
+    setMinimumScore(0);
+    selectBusiness(matchingBusiness);
   }
 
   const hasOpenTicket = tickets.some((ticket) => ticket.businessId === selectedBusiness.id && ticket.status === "open");
@@ -291,7 +314,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
           </p>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)_420px]">
+        <section className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_400px] 2xl:grid-cols-[320px_minmax(0,1fr)_420px]">
           <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
@@ -351,9 +374,10 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
           </aside>
 
           <ProspectMap
-            businesses={filteredBusinesses}
+            businesses={mapBusinesses}
             selectedBusinessId={selectedBusiness.id}
             onSelectBusiness={selectBusiness}
+            ticketStatusByBusinessId={ticketStatusByBusinessId}
             controls={{
               categoryFilter,
               onCategoryFilter: setCategoryFilter,
@@ -366,11 +390,32 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
               onSearch: runSearch,
               searchStatus,
               searchMessage,
-              visibleCount: filteredBusinesses.length,
+              visibleCount: mapBusinesses.length,
             }}
           />
 
           <div className="space-y-6 xl:sticky xl:top-5 xl:self-start">
+            <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/20 backdrop-blur-xl">
+              <button
+                type="button"
+                onClick={() => setFocusSelectedOnly((current) => !current)}
+                aria-pressed={focusSelectedOnly}
+                className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
+                  focusSelectedOnly
+                    ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100"
+                    : "border-white/10 bg-black/20 text-slate-300 hover:bg-white/[0.06]"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  {focusSelectedOnly ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                  {focusSelectedOnly ? "Focused on selected business" : "Show only selected on map"}
+                </span>
+                <span className="text-xs font-medium text-slate-500">{focusSelectedOnly ? "On" : "Off"}</span>
+              </button>
+              <p className="mt-2 px-1 text-xs leading-5 text-slate-500">
+                Useful after opening a ticket: hide the rest of the territory and keep the map centred on one business.
+              </p>
+            </div>
             <BusinessDetailPanel
               business={selectedBusiness}
               onOpenTicket={openTicket}
@@ -378,7 +423,12 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
               hasOpenTicket={hasOpenTicket}
               canUseDeepResearch={isAdmin}
             />
-            <TicketQueue tickets={tickets} />
+            <TicketQueue
+              tickets={tickets}
+              businesses={businesses}
+              selectedBusinessId={selectedBusiness.id}
+              onSelectTicket={selectTicket}
+            />
           </div>
         </section>
       </section>
