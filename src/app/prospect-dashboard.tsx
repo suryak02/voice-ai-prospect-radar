@@ -1,14 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowUpRight, Eye, EyeOff, Filter, History, Search } from "lucide-react";
+import { ArrowUpRight, BarChart3, Eye, EyeOff, Filter, History, Search } from "lucide-react";
 import { BusinessDetailPanel } from "@/components/business-detail-panel";
 import { ProspectMap } from "@/components/prospect-map";
-import { TicketQueue } from "@/components/ticket-queue";
 import { ThemeToggle } from "@/components/theme-provider";
 import { CATEGORY_META, getCategoryOptionGroups } from "@/lib/categories";
 import { getScorePillClasses } from "@/lib/scoring";
+import { calculateTicketMetrics } from "@/lib/tickets";
 import type { Business, BusinessCategory, Ticket } from "@/lib/types";
 
 const categoryGroups = getCategoryOptionGroups();
@@ -102,6 +103,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     return statusByBusinessId;
   }, [tickets]);
 
+  const ticketMetrics = useMemo(() => calculateTicketMetrics(tickets), [tickets]);
   const highPriorityCount = businesses.filter((business) => business.voiceAiScore >= 7).length;
   const averageScore = businesses.length
     ? Math.round(businesses.reduce((total, business) => total + business.voiceAiScore, 0) / businesses.length)
@@ -252,11 +254,11 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
   async function rejectBusiness(business: Business) {
     const ticket: Ticket = {
-      id: `rejected-${business.id}`,
+      id: `lost-${business.id}`,
       businessId: business.id,
       businessName: business.name,
       score: business.voiceAiScore,
-      status: "rejected",
+      status: "lost",
       createdAt: formatTicketDate(new Date()),
     };
 
@@ -270,14 +272,6 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     }
 
     setTickets((currentTickets) => [savedTicket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)]);
-  }
-
-  function selectTicket(ticket: Ticket) {
-    const matchingBusiness = businesses.find((business) => business.id === ticket.businessId);
-    if (!matchingBusiness) return;
-    setCategoryFilter("all");
-    setMinimumScore(0);
-    selectBusiness(matchingBusiness);
   }
 
   if (!selectedBusiness) {
@@ -300,7 +294,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
   return (
     <main className="min-h-screen text-slate-100">
-      <section className="mx-auto flex w-full max-w-[1500px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
         <header className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-4xl">
@@ -317,6 +311,12 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
             </div>
             <div className="flex w-fit items-center gap-3">
               <ThemeToggle />
+              <Link
+                href="/tickets"
+                className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/[0.09]"
+              >
+                Review pipeline <BarChart3 className="h-4 w-4" />
+              </Link>
               <a
                 href="https://github.com/suryak02/voice-ai-prospect-radar"
                 target="_blank"
@@ -390,7 +390,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
           </p>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_400px] 2xl:grid-cols-[320px_minmax(0,1fr)_420px]">
+        <section className="grid gap-6 xl:grid-cols-[340px_minmax(760px,1fr)_460px] 2xl:grid-cols-[360px_minmax(900px,1fr)_500px]">
           <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
@@ -499,12 +499,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
               hasOpenTicket={hasOpenTicket}
               canUseDeepResearch={isAdmin}
             />
-            <TicketQueue
-              tickets={tickets}
-              businesses={businesses}
-              selectedBusinessId={selectedBusiness.id}
-              onSelectTicket={selectTicket}
-            />
+            <ReviewPipelineSummary metrics={ticketMetrics} />
           </div>
         </section>
       </section>
@@ -548,6 +543,46 @@ function formatViewedDate(date: Date): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function ReviewPipelineSummary({ metrics }: { metrics: ReturnType<typeof calculateTicketMetrics> }) {
+  return (
+    <section className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/70">Human review</p>
+          <h2 className="mt-2 text-lg font-semibold text-white">Outreach pipeline</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Ticket details now live on a dedicated board, keeping the map focused while still showing follow-up momentum.
+          </p>
+        </div>
+        <BarChart3 className="h-5 w-5 text-indigo-300" />
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+        <MiniMetric label="Open" value={metrics.byStatus.open.toString()} />
+        <MiniMetric label="Contacted" value={metrics.byStatus.contacted.toString()} />
+        <MiniMetric label="Won" value={metrics.byStatus.won.toString()} />
+        <MiniMetric label="Lost" value={metrics.byStatus.lost.toString()} />
+      </div>
+
+      <Link
+        href="/tickets"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+      >
+        Open review pipeline <ArrowUpRight className="h-4 w-4" />
+      </Link>
+    </section>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-3">
+      <p className="text-[11px] text-slate-500">{label}</p>
+      <p className="mt-1 text-xl font-black text-white">{value}</p>
+    </div>
+  );
 }
 
 function KpiCard({ label, value, detail }: { label: string; value: string; detail: string }) {

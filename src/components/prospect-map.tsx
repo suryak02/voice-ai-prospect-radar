@@ -327,7 +327,7 @@ function ProspectMarkerBase({ business, isSelected, isExpanded, onSelectBusiness
       onClick={() => onSelectBusiness(business)}
       className={`${style ? "absolute" : "relative"} z-10 -translate-x-1/2 -translate-y-1/2 rounded-full ring-4 transition hover:scale-110 focus:outline-none focus:ring-8 ${getScoreColorClasses(
         business.voiceAiScore,
-      )} ${isSelected ? "scale-[1.45] ring-8 ring-indigo-200/70" : ""} ${ticketStatus === "open" ? "outline outline-2 outline-emerald-300/80" : ""} ${ticketStatus === "rejected" ? "outline outline-2 outline-rose-300/80" : ""}`}
+      )} ${isSelected ? "scale-[1.45] ring-8 ring-indigo-200/70" : ""} ${ticketStatus === "open" ? "outline outline-2 outline-emerald-300/80" : ""} ${ticketStatus === "contacted" ? "outline outline-2 outline-sky-300/80" : ""} ${ticketStatus === "won" ? "outline outline-2 outline-violet-300/80" : ""} ${ticketStatus === "lost" ? "outline outline-2 outline-rose-300/80" : ""}`}
       style={style}
       aria-label={`Select ${business.name}, score ${business.voiceAiScore}`}
     >
@@ -335,9 +335,13 @@ function ProspectMarkerBase({ business, isSelected, isExpanded, onSelectBusiness
         className={`grid place-items-center font-black ${isExpanded ? "h-14 w-14 text-base" : "h-11 w-11 text-sm"} ${
           ticketStatus === "open"
             ? "text-emerald-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
-            : ticketStatus === "rejected"
-              ? "text-rose-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
-              : ""
+            : ticketStatus === "contacted"
+              ? "text-sky-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
+              : ticketStatus === "won"
+                ? "text-violet-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
+                : ticketStatus === "lost"
+                  ? "text-rose-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.55)]"
+                  : ""
         }`}
       >
         {business.voiceAiScore}
@@ -349,7 +353,7 @@ function ProspectMarkerBase({ business, isSelected, isExpanded, onSelectBusiness
             <span>
               {business.name}
               <span className="mt-1 block text-[11px] font-medium text-slate-400">
-                {ticketStatus === "open" ? "Open ticket" : ticketStatus === "rejected" ? "Marked not fit" : getScoreLabel(business.voiceAiScore)} · {business.borough}
+                {ticketStatus === "open" ? "Open ticket" : ticketStatus === "contacted" ? "Contacted" : ticketStatus === "won" ? "Won" : ticketStatus === "lost" ? "Lost" : getScoreLabel(business.voiceAiScore)} · {business.borough}
               </span>
             </span>
           </span>

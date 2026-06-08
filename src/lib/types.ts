@@ -95,6 +95,6 @@ export type Ticket = {
   businessId: string;
   businessName: string;
   score: number;
-  status: "open" | "reviewed" | "rejected";
+  status: "open" | "contacted" | "won" | "lost";
   createdAt: string;
 };

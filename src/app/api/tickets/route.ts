@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createTicket, getTickets } from "@/lib/data/businesses";
 import { checkRateLimit, cleanupRateLimitBuckets } from "@/lib/rate-limit";
+import { TICKET_STATUS_VALUES } from "@/lib/tickets";
 
 const ticketSchema = z.object({
   businessId: z.string().trim().min(1).max(160),
   businessName: z.string().trim().min(1).max(180),
   score: z.number().int().min(0).max(9),
-  status: z.enum(["open", "reviewed", "rejected"]),
+  status: z.enum(TICKET_STATUS_VALUES),
 });
 
 export async function GET() {

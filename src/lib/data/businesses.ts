@@ -1,4 +1,5 @@
 import { mockBusinesses } from "@/lib/mock-businesses";
+import { normalizeTicketStatus } from "@/lib/tickets";
 import { isInUk } from "@/lib/uk-bounds";
 import type { Business, ScoreBreakdown, Ticket } from "@/lib/types";
 
@@ -117,7 +118,7 @@ export async function getTickets(): Promise<Ticket[]> {
     businessId: row.businessId,
     businessName: row.businessName,
     score: row.score,
-    status: row.status,
+    status: normalizeTicketStatus(row.status),
     createdAt: formatTicketDate(row.updatedAt),
   }));
 }
@@ -140,12 +141,12 @@ export async function createTicket(input: Pick<Ticket, "businessId" | "businessN
       businessId: input.businessId,
       businessName: input.businessName,
       score: input.score,
-      status: input.status,
+      status: normalizeTicketStatus(input.status),
     },
     update: {
       businessName: input.businessName,
       score: input.score,
-      status: input.status,
+      status: normalizeTicketStatus(input.status),
     },
   });
 
@@ -154,7 +155,7 @@ export async function createTicket(input: Pick<Ticket, "businessId" | "businessN
     businessId: row.businessId,
     businessName: row.businessName,
     score: row.score,
-    status: row.status,
+    status: normalizeTicketStatus(row.status),
     createdAt: formatTicketDate(row.updatedAt),
   };
 }

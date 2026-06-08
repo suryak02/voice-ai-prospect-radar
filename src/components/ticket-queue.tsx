@@ -3,14 +3,16 @@ import type { Business, Ticket } from "@/lib/types";
 
 const statusStyles: Record<Ticket["status"], string> = {
   open: "border-emerald-300/30 bg-emerald-300/10 text-emerald-100",
-  reviewed: "border-sky-300/30 bg-sky-300/10 text-sky-100",
-  rejected: "border-rose-300/30 bg-rose-300/10 text-rose-100",
+  contacted: "border-sky-300/30 bg-sky-300/10 text-sky-100",
+  won: "border-violet-300/30 bg-violet-300/10 text-violet-100",
+  lost: "border-rose-300/30 bg-rose-300/10 text-rose-100",
 };
 
 const statusIcons: Record<Ticket["status"], typeof CheckCircle2> = {
   open: CheckCircle2,
-  reviewed: MapPin,
-  rejected: XCircle,
+  contacted: MapPin,
+  won: CheckCircle2,
+  lost: XCircle,
 };
 
 type TicketQueueProps = {
@@ -25,7 +27,7 @@ export function TicketQueue({ tickets, businesses, selectedBusinessId, onSelectT
     allTickets.findIndex((candidate) => candidate.businessId === ticket.businessId) === index,
   );
   const openTickets = visibleTickets.filter((ticket) => ticket.status === "open");
-  const rejectedTickets = visibleTickets.filter((ticket) => ticket.status === "rejected");
+  const lostTickets = visibleTickets.filter((ticket) => ticket.status === "lost");
 
   return (
     <section className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6">
@@ -36,7 +38,7 @@ export function TicketQueue({ tickets, businesses, selectedBusinessId, onSelectT
         </div>
         <div className="flex gap-2 text-xs font-black">
           <span className="rounded-full bg-emerald-300 px-2.5 py-1 text-emerald-950">{openTickets.length} open</span>
-          {rejectedTickets.length > 0 && <span className="rounded-full bg-rose-300 px-2.5 py-1 text-rose-950">{rejectedTickets.length} not fit</span>}
+          {lostTickets.length > 0 && <span className="rounded-full bg-rose-300 px-2.5 py-1 text-rose-950">{lostTickets.length} not fit</span>}
         </div>
       </div>
 
@@ -67,7 +69,7 @@ export function TicketQueue({ tickets, businesses, selectedBusinessId, onSelectT
                   <div className="min-w-0">
                     <p className="font-semibold text-white">{ticket.businessName}</p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {ticket.status === "rejected" ? "Marked not fit" : "Opened"} {ticket.createdAt}
+                      {ticket.status === "lost" ? "Marked lost" : ticket.status === "contacted" ? "Contacted" : ticket.status === "won" ? "Won" : "Opened"} {ticket.createdAt}
                     </p>
                     {!matchingBusiness && <p className="mt-2 text-xs text-amber-200">Not in the current result set.</p>}
                   </div>
@@ -79,7 +81,7 @@ export function TicketQueue({ tickets, businesses, selectedBusinessId, onSelectT
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <span className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold capitalize ${statusStyles[ticket.status]}`}>
                     <StatusIcon className="h-3.5 w-3.5" />
-                    {ticket.status === "rejected" ? "not fit" : ticket.status}
+                    {ticket.status === "lost" ? "lost" : ticket.status}
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-medium text-slate-400">
                     <MapPin className="h-3.5 w-3.5" />

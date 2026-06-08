@@ -43,6 +43,10 @@ enum BusinessStatus {
 
 enum TicketStatus {
   open
+  contacted
+  won
+  lost
+  // Legacy values kept so existing persisted demo tickets can still be read and normalized in app code.
   reviewed
   rejected
 }
