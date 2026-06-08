@@ -1,11 +1,17 @@
 import { TicketPipelineBoard, PipelineBackLink } from "@/components/ticket-pipeline-board";
 import { ThemeToggle } from "@/components/theme-provider";
 import { getTickets } from "@/lib/data/businesses";
+import type { Ticket } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function TicketsPage() {
-  const tickets = await getTickets();
+  let tickets: Ticket[] = [];
+  try {
+    tickets = await getTickets();
+  } catch (error) {
+    console.error("Failed to load ticket pipeline. Rendering an empty board for demo stability.", error);
+  }
 
   return (
     <main className="min-h-screen text-slate-100">
