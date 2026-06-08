@@ -9,8 +9,8 @@ import type { NextRequest } from "next/server";
  *
  * The matched tier is forwarded to the app as an authoritative `x-user-tier`
  * request header (any client-supplied value is stripped first), so API routes
- * can enforce tier without trusting the client. Graceful when SITE_PASSWORD is
- * unset (open + admin, for local dev).
+ * can enforce tier without trusting the client. Local development stays open
+ * when SITE_PASSWORD is unset; production fails closed.
  */
 type Tier = "admin" | "demo";
 
@@ -32,14 +32,15 @@ function allow(request: NextRequest, tier: Tier) {
 }
 
 export function proxy(request: NextRequest) {
-  // No admin password configured → open site, full access (local dev).
-  if (!process.env.SITE_PASSWORD) return allow(request, "admin");
+  // No admin password configured → open site only in local development.
+  if (!process.env.SITE_PASSWORD && process.env.NODE_ENV !== "production") return allow(request, "admin");
 
   const header = request.headers.get("authorization");
   if (header?.startsWith("Basic ")) {
     try {
       const decoded = atob(header.slice(6));
       const separator = decoded.indexOf(":");
+      if (separator < 0) return challenge();
       const tier = matchTier(decoded.slice(0, separator), decoded.slice(separator + 1));
       if (tier) return allow(request, tier);
     } catch {
@@ -47,6 +48,10 @@ export function proxy(request: NextRequest) {
     }
   }
 
+  return challenge();
+}
+
+function challenge() {
   return new NextResponse("Authentication required.", {
     status: 401,
     headers: { "WWW-Authenticate": 'Basic realm="Voice AI Prospect Map"' },

@@ -79,9 +79,9 @@ function toBusinessRow(business: Business) {
 }
 
 /**
- * Upsert live-search prospects into the database. Fire-and-forget: called from
- * `after()` in the search route so it never blocks or breaks the response, and a
- * no-op when there is no database configured.
+ * Upsert live-search prospects into the database. The live-search route awaits
+ * this before responding so immediate ticket actions do not race the required
+ * Ticket → Business foreign key. No-op when there is no database configured.
  */
 export async function persistBusinesses(businesses: Business[]): Promise<void> {
   if (!hasDatabaseUrl || businesses.length === 0) return;
@@ -91,7 +91,8 @@ export async function persistBusinesses(businesses: Business[]): Promise<void> {
     await Promise.all(
       businesses.map((business) => {
         const row = toBusinessRow(business);
-        return prisma.business.upsert({ where: { id: row.id }, create: row, update: row });
+        const where = row.googlePlaceId ? { googlePlaceId: row.googlePlaceId } : { id: row.id };
+        return prisma.business.upsert({ where, create: row, update: row });
       }),
     );
   } catch (error) {
@@ -104,16 +105,20 @@ export async function getTickets(): Promise<Ticket[]> {
 
   const { prisma } = await import("@/lib/prisma");
   const rows = await prisma.ticket.findMany({
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" },
   });
+  const latestByBusinessId = new Map<string, (typeof rows)[number]>();
+  for (const row of rows) {
+    if (!latestByBusinessId.has(row.businessId)) latestByBusinessId.set(row.businessId, row);
+  }
 
-  return rows.map((row) => ({
+  return Array.from(latestByBusinessId.values()).map((row) => ({
     id: row.id,
     businessId: row.businessId,
     businessName: row.businessName,
     score: row.score,
     status: row.status,
-    createdAt: formatTicketDate(row.createdAt),
+    createdAt: formatTicketDate(row.updatedAt),
   }));
 }
 
@@ -127,10 +132,11 @@ export async function createTicket(input: Pick<Ticket, "businessId" | "businessN
   }
 
   const { prisma } = await import("@/lib/prisma");
+  const ticketId = `ticket-${input.businessId}`;
   const row = await prisma.ticket.upsert({
-    where: { id: `${input.status}-${input.businessId}` },
+    where: { id: ticketId },
     create: {
-      id: `${input.status}-${input.businessId}`,
+      id: ticketId,
       businessId: input.businessId,
       businessName: input.businessName,
       score: input.score,
@@ -149,7 +155,7 @@ export async function createTicket(input: Pick<Ticket, "businessId" | "businessN
     businessName: row.businessName,
     score: row.score,
     status: row.status,
-    createdAt: formatTicketDate(row.createdAt),
+    createdAt: formatTicketDate(row.updatedAt),
   };
 }
 

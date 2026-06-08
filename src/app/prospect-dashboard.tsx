@@ -31,6 +31,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [searchMessage, setSearchMessage] = useState("Showing the prepared London demo dataset. Run a targeted search to personalize the territory.");
+  const [datasetLabel, setDatasetLabel] = useState("Saved demo dataset · All verticals");
   const [viewedProspects, setViewedProspects] = useState<ViewedProspect[]>([]);
   const [focusSelectedOnly, setFocusSelectedOnly] = useState(false);
 
@@ -112,14 +113,27 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
   const toggleTargetCategory = useCallback((category: BusinessCategory) => {
     setTargetCategories((current) => {
-      if (current.includes(category)) return current.filter((value) => value !== category);
-      if (current.length >= MAX_SEARCH_CATEGORIES) return current;
-      return [...current, category];
+      const next = current.includes(category)
+        ? current.filter((value) => value !== category)
+        : current.length >= MAX_SEARCH_CATEGORIES
+          ? current
+          : [...current, category];
+      if (next.length) {
+        const label = next.length === 1 ? CATEGORY_META[next[0]].label : `${next.length} verticals`;
+        setSearchStatus("idle");
+        setSearchMessage(`${label} selected. Click Search live data to replace the saved map with fresh Google Places results.`);
+      } else {
+        setSearchStatus("idle");
+        setSearchMessage("All saved verticals selected. Click Show saved map to browse the prepared map without live API calls.");
+      }
+      return next;
     });
   }, []);
 
   const showAllTargetCategories = useCallback(() => {
     setTargetCategories([]);
+    setSearchStatus("idle");
+    setSearchMessage("All saved verticals selected. Click Show saved map to browse the prepared map without live API calls.");
   }, []);
 
   const selectBusiness = useCallback((business: Business) => {
@@ -166,25 +180,16 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
         const data = (await response.json()) as { businesses?: Business[]; error?: string };
         if (!response.ok || !data.businesses?.length) throw new Error(data.error ?? "No saved businesses returned.");
 
-        const normalizedArea = searchArea.trim().toLowerCase();
-        const nextBusinesses = normalizedArea
-          ? data.businesses.filter((business) => {
-              const searchable = `${business.name} ${business.borough} ${business.address} ${business.category}`.toLowerCase();
-              return searchable.includes(normalizedArea) || normalizedArea.includes(business.borough.toLowerCase());
-            })
-          : data.businesses;
-
-        const restoredBusinesses = nextBusinesses.length ? nextBusinesses : data.businesses;
+        const restoredBusinesses = data.businesses;
         setBusinesses(restoredBusinesses);
         selectBusiness(restoredBusinesses[0]);
+        setDatasetLabel("Saved map · All verticals");
         setCategoryFilter("all");
         setMinimumScore(0);
         setFocusSelectedOnly(false);
         setSearchStatus("success");
         setSearchMessage(
-          nextBusinesses.length
-            ? `Showing ${nextBusinesses.length} saved prospects across all verticals for ${searchArea}. No live API call used.`
-            : `No exact saved match for ${searchArea}, so the full saved prospect map is back. No live API call used.`,
+          `Showing all ${restoredBusinesses.length} saved prospects across every vertical. No live API call used.`,
         );
         return;
       }
@@ -202,6 +207,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
       setBusinesses(data.businesses);
       selectBusiness(data.businesses[0]);
+      setDatasetLabel(`Live ${data.source === "google_places_cache" ? "Google Places cache" : data.source === "google_places_live" ? "Google Places" : "stored fallback"} · ${targetCategories.length === 1 ? CATEGORY_META[targetCategories[0]].label : `${targetCategories.length} verticals`} · ${searchArea}`);
       setCategoryFilter("all");
       setMinimumScore(0);
       setFocusSelectedOnly(false);
@@ -215,7 +221,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     }
   }
 
-  function openTicket(business: Business) {
+  async function openTicket(business: Business) {
     const ticket: Ticket = {
       id: `open-${business.id}`,
       businessId: business.id,
@@ -233,10 +239,18 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
       return [ticket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)];
     });
 
-    persistTicket(ticket);
+    const savedTicket = await persistTicket(ticket);
+    if (!savedTicket) {
+      setTickets((currentTickets) => currentTickets.filter((currentTicket) => currentTicket.id !== ticket.id));
+      setSearchStatus("error");
+      setSearchMessage("Could not save that ticket. Try again after the live prospects finish saving, or reload the saved map.");
+      return;
+    }
+
+    setTickets((currentTickets) => [savedTicket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)]);
   }
 
-  function rejectBusiness(business: Business) {
+  async function rejectBusiness(business: Business) {
     const ticket: Ticket = {
       id: `rejected-${business.id}`,
       businessId: business.id,
@@ -247,7 +261,15 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     };
 
     setTickets((currentTickets) => [ticket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)]);
-    persistTicket(ticket);
+    const savedTicket = await persistTicket(ticket);
+    if (!savedTicket) {
+      setTickets((currentTickets) => currentTickets.filter((currentTicket) => currentTicket.id !== ticket.id));
+      setSearchStatus("error");
+      setSearchMessage("Could not save that review decision. Try again after the live prospects finish saving, or reload the saved map.");
+      return;
+    }
+
+    setTickets((currentTickets) => [savedTicket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)]);
   }
 
   function selectTicket(ticket: Ticket) {
@@ -256,6 +278,22 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     setCategoryFilter("all");
     setMinimumScore(0);
     selectBusiness(matchingBusiness);
+  }
+
+  if (!selectedBusiness) {
+    return (
+      <main className="min-h-screen text-slate-100">
+        <section className="mx-auto flex w-full max-w-[900px] flex-col gap-4 px-4 py-10 sm:px-6 lg:px-8">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-8 text-center shadow-2xl shadow-black/20 backdrop-blur-xl">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/70">No prospects loaded</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">The map is waiting for prospect data.</h1>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-400">
+              Try refreshing the page or checking the database connection. The app now guards this state instead of crashing.
+            </p>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   const hasOpenTicket = tickets.some((ticket) => ticket.businessId === selectedBusiness.id && ticket.status === "open");
@@ -291,7 +329,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
           </div>
 
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <KpiCard label="Seed businesses" value={businesses.length.toString()} detail="Across UK cities & verticals" />
+            <KpiCard label="Current prospects" value={businesses.length.toString()} detail={datasetLabel} />
             <KpiCard label="High-priority leads" value={highPriorityCount.toString()} detail="Scored 7-9 for human review" />
             <KpiCard label="Average score" value={`${averageScore}/9`} detail="Across current public-signal set" />
           </div>
@@ -334,8 +372,13 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
             </form>
           </div>
 
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-slate-300">
+              Dataset: {datasetLabel}
+            </span>
+          </div>
           <p
-            className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+            className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
               searchStatus === "error"
                 ? "border-rose-400/20 bg-rose-400/10 text-rose-100"
                 : searchStatus === "success"
@@ -469,9 +512,9 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
   );
 }
 
-async function persistTicket(ticket: Ticket) {
+async function persistTicket(ticket: Ticket): Promise<Ticket | null> {
   try {
-    await fetch("/api/tickets", {
+    const response = await fetch("/api/tickets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -481,8 +524,13 @@ async function persistTicket(ticket: Ticket) {
         status: ticket.status,
       }),
     });
+
+    const data = (await response.json()) as { ticket?: Ticket; error?: string };
+    if (!response.ok || !data.ticket) throw new Error(data.error ?? "Ticket API did not return a saved ticket.");
+    return data.ticket;
   } catch (error) {
     console.error("Failed to persist ticket", error);
+    return null;
   }
 }
 
@@ -529,14 +577,14 @@ function CategorySearchPicker({
           {selected.length === 0 ? "All saved verticals" : `${selected.length}/${MAX_SEARCH_CATEGORIES} selected`}
         </span>
       </div>
-      <div className="mt-3 max-h-44 space-y-3 overflow-y-auto pr-1">
+      <div className="mt-3 max-h-64 space-y-3 overflow-y-auto pb-2 pr-1">
         <button
           type="button"
           onClick={onShowAll}
           aria-pressed={selected.length === 0}
           className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
             selected.length === 0
-              ? "border-emerald-300/40 bg-emerald-300/15 text-emerald-100"
+              ? "border-emerald-300/70 bg-emerald-300/20 text-emerald-50 shadow-sm shadow-emerald-950/30"
               : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
           }`}
         >
@@ -559,7 +607,7 @@ function CategorySearchPicker({
                     aria-pressed={isActive}
                     className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                       isActive
-                        ? "border-indigo-300/40 bg-indigo-300/15 text-indigo-100"
+                        ? "border-indigo-300/80 bg-indigo-300/25 text-indigo-50 shadow-sm shadow-indigo-950/30"
                         : selected.length >= MAX_SEARCH_CATEGORIES
                           ? "border-white/10 bg-black/10 text-slate-600"
                           : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"

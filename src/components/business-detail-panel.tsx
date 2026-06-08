@@ -8,8 +8,8 @@ import type { Business } from "@/lib/types";
 
 type BusinessDetailPanelProps = {
   business: Business;
-  onOpenTicket: (business: Business) => void;
-  onReject: (business: Business) => void;
+  onOpenTicket: (business: Business) => void | Promise<void>;
+  onReject: (business: Business) => void | Promise<void>;
   hasOpenTicket: boolean;
   canUseDeepResearch?: boolean;
 };
@@ -36,6 +36,16 @@ function googleMapsDirectionsUrl(business: Business): string {
   return business.googlePlaceId ? `${url}&destination_place_id=${business.googlePlaceId}` : url;
 }
 
+function safeExternalUrl(url?: string): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 const breakdownLabels: Record<keyof Business["scoreBreakdown"], string> = {
   categoryFit: "Category fit",
   callDependency: "Call dependency",
@@ -56,6 +66,7 @@ export function BusinessDetailPanel({
   const entries = Object.entries(business.scoreBreakdown) as [keyof Business["scoreBreakdown"], number][];
   const reasoning = buildSpecificReasoning(business);
   const voiceAiAngle = buildVoiceAiAngle(business);
+  const websiteUrl = safeExternalUrl(business.website);
 
   const [generated, setGenerated] = useState<EnrichmentState | null>(null);
   const [enrichStatus, setEnrichStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -168,7 +179,7 @@ export function BusinessDetailPanel({
             </div>
             {depthMode === "deep" && (
               <p className="mt-1.5 text-[11px] leading-4 text-slate-500">
-                Deep research reads the business&apos;s website for a source-grounded brief. Admin only.
+                Deep research uses website text when it can be fetched. Admin only.
               </p>
             )}
           </div>
@@ -199,7 +210,9 @@ export function BusinessDetailPanel({
                   ? "Researching…"
                   : "Refreshing…"
                 : depthMode === "deep"
-                  ? "Run deep research"
+                  ? enrichment.depth === "deep"
+                    ? "Refresh deep research"
+                    : "Run deep research"
                   : "Refresh analysis"}
             </button>
           </div>
@@ -301,7 +314,7 @@ export function BusinessDetailPanel({
           onClick={() => onReject(business)}
           className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07]"
         >
-          Mark not fit
+          {hasOpenTicket ? "Change to not fit" : "Mark not fit"}
         </button>
       </div>
 
@@ -314,9 +327,9 @@ export function BusinessDetailPanel({
             <Phone className="h-3.5 w-3.5 shrink-0 text-slate-500" /> {business.phone}
           </a>
         )}
-        {business.website && (
+        {websiteUrl && (
           <a
-            href={business.website}
+            href={websiteUrl}
             target="_blank"
             rel="noreferrer"
             className="flex items-center gap-2 break-all transition hover:text-white"

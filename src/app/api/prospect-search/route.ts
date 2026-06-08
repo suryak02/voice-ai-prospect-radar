@@ -1,4 +1,4 @@
-import { after, NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { CATEGORY_ENUM_VALUES } from "@/lib/categories";
 import { getBusinesses, persistBusinesses } from "@/lib/data/businesses";
@@ -57,9 +57,10 @@ export async function POST(request: NextRequest) {
   try {
     const live = await searchGooglePlacesProspects({ area, categories: categories as BusinessCategory[] });
     if (live.businesses.length) {
-      // Persist fresh live results after the response is sent (non-blocking).
+      // Persist fresh live results before responding so immediate ticket actions
+      // do not race the required Ticket → Business foreign key.
       if (!live.cached) {
-        after(() => persistBusinesses(live.businesses));
+        await persistBusinesses(live.businesses);
       }
       return NextResponse.json(
         {
