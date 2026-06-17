@@ -25,7 +25,7 @@ A useful prospecting tool needs to combine public data with business logic:
 
 1. Browse the saved all-vertical prospect map.
 2. Search a UK area and selected business categories using Google Places.
-3. Score and rank each prospect from 0 to 9.
+3. Page through live Google Places results, dedupe them by Google Place ID, and score each prospect from 0 to 9.
 4. Review prospects on a map and shortlist.
 5. Open a prospect detail panel with score reasoning.
 6. Generate an AI prospect brief and outreach angle.
@@ -36,7 +36,7 @@ A useful prospecting tool needs to combine public data with business logic:
 ```text
 Next.js UI
   ├─ search controls
-  ├─ Google Map
+  ├─ Leaflet/CARTO vector map
   ├─ ranked shortlist
   ├─ prospect detail panel
   └─ ticket queue
@@ -51,7 +51,7 @@ Next.js API routes
 Data and external services
   ├─ Supabase Postgres via Prisma
   ├─ Google Places API
-  ├─ Google Maps JavaScript API
+  ├─ Leaflet + OpenStreetMap/CARTO tiles
   ├─ OpenAI API
   └─ Upstash Redis
 ```
@@ -90,14 +90,18 @@ This keeps the demo cost-controlled while still showing how a higher-value resea
 - Prisma 7 handles the data layer.
 - Upstash Redis provides shared rate limits and short-lived search caching when configured.
 - Basic auth creates demo/admin access tiers.
-- Server and browser Google keys are split so the browser key can be referrer-restricted.
+- Google Places stays server-side, while the browser map uses Leaflet/OpenStreetMap tiles so no browser Google Maps key is required.
+- Live search paginates Google Places Text Search results up to three pages per selected vertical; Leaflet renders the resulting Google coordinates.
 - The public GitHub repo is curated separately from private handoff and internal planning notes.
 
 ## Tradeoffs
 
 - The app is a portfolio MVP, not a full CRM.
 - The scoring rubric is hand-designed and explainable rather than statistically calibrated from conversion data.
-- Live search is intentionally capped and cached to protect API cost.
+- Live search is paginated, capped, and cached to protect API cost.
+- The browser map renderer is separate from the prospect source: Leaflet makes
+  marker rendering faster, but Google Places still determines how many businesses
+  are discovered.
 - Deep research is admin-only because website reading and LLM calls are more expensive.
 - Basic auth is enough for a gated demo, but a commercial version would use real accounts and audit logs.
 
@@ -109,6 +113,8 @@ This keeps the demo cost-controlled while still showing how a higher-value resea
 - Add a public limited demo mode with stricter quotas.
 - Add screenshot/video assets directly to the public README.
 - Add more automated tests around API validation, ticket state transitions, and data persistence edge cases.
+- Add postcode/outward-code search and a medium saved prospect database produced
+  by tiled Google Places ingestion.
 
 ## Resume-safe summary
 

@@ -6,6 +6,7 @@ import type { NextRequest } from "next/server";
  *
  * - admin (SITE_USERNAME / SITE_PASSWORD): full access, incl. deep research.
  * - demo  (DEMO_USERNAME / DEMO_PASSWORD): standard access only.
+ * - Adrian reviewer login (ADRIAN_USERNAME / ADRIAN_PASSWORD): standard access.
  *
  * The matched tier is forwarded to the app as an authoritative `x-user-tier`
  * request header (any client-supplied value is stripped first), so API routes
@@ -17,11 +18,19 @@ type Tier = "admin" | "demo";
 function matchTier(user: string, pass: string): Tier | null {
   const adminUser = process.env.SITE_USERNAME || "demo";
   const adminPass = process.env.SITE_PASSWORD;
-  const demoUser = process.env.DEMO_USERNAME;
-  const demoPass = process.env.DEMO_PASSWORD;
+  const demoCredentials = [
+    { user: process.env.DEMO_USERNAME, pass: process.env.DEMO_PASSWORD },
+    { user: process.env.ADRIAN_USERNAME, pass: process.env.ADRIAN_PASSWORD },
+  ];
 
   if (adminPass && user === adminUser && pass === adminPass) return "admin";
-  if (demoPass && demoUser && user === demoUser && pass === demoPass) return "demo";
+  if (
+    demoCredentials.some(
+      (credential) => credential.user && credential.pass && user === credential.user && pass === credential.pass,
+    )
+  ) {
+    return "demo";
+  }
   return null;
 }
 

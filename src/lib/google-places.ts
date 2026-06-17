@@ -1,5 +1,6 @@
 import { getCache, setCache, cleanupMemoryCache } from "@/lib/cache";
 import { CATEGORY_META, categorySearchTerm, inferCategoryFromText } from "@/lib/categories";
+import { getEnvValue } from "@/lib/env";
 import { calculateVoiceAiScore } from "@/lib/scoring";
 import { isInUk, UK_BOUNDS } from "@/lib/uk-bounds";
 import type { Business, BusinessCategory, BusinessStatus } from "@/lib/types";
@@ -18,10 +19,14 @@ const FIELD_MASK = [
   "places.googleMapsUri",
   "places.businessStatus",
   "places.types",
+  "nextPageToken",
 ].join(",");
 
-// Google Places "Text Search (New)" returns up to 20 results per request.
-const MAX_RESULTS = 20;
+// Google Places "Text Search (New)" returns up to 20 results per page and up
+// to roughly 60 across paginated pages for a single query.
+const MAX_RESULTS_PER_PAGE = 20;
+const DEFAULT_MAX_PAGES_PER_QUERY = 3;
+const ABSOLUTE_MAX_PAGES_PER_QUERY = 3;
 // Safety cap on how many verticals a single search fans out to (bounds API cost).
 const MAX_CATEGORIES = 6;
 const CACHE_TTL_SECONDS = 60 * 30;
@@ -51,6 +56,7 @@ type GooglePlace = {
 
 type SearchResponse = {
   places?: GooglePlace[];
+  nextPageToken?: string;
   error?: { message?: string; status?: string };
 };
 
@@ -62,11 +68,12 @@ export type LiveProspectSearchInput = {
 export async function searchGooglePlacesProspects(
   input: LiveProspectSearchInput,
 ): Promise<{ businesses: Business[]; cached: boolean; errors: string[] }> {
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY;
+  const apiKey = getEnvValue("GOOGLE_MAPS_API_KEY") ?? getEnvValue("GOOGLE_PLACES_API_KEY");
   if (!apiKey) return { businesses: [], cached: false, errors: ["GOOGLE_MAPS_API_KEY / GOOGLE_PLACES_API_KEY not set at runtime"] };
 
   const categories = input.categories.slice(0, MAX_CATEGORIES);
-  const cacheKey = `places:${input.area.trim().toLowerCase()}::${[...categories].sort().join(",")}`;
+  const pageLimit = getPlacesPageLimit();
+  const cacheKey = `places:${input.area.trim().toLowerCase()}::${[...categories].sort().join(",")}::pages:${pageLimit}`;
   cleanupMemoryCache();
   const cached = await getCache<Business[]>(cacheKey);
   if (cached.value) {
@@ -79,7 +86,7 @@ export async function searchGooglePlacesProspects(
   // empty list for that vertical instead of aborting the whole search.
   const resultsByCategory = await Promise.all(
     categories.map((category) =>
-      searchPlaces(apiKey, `${categorySearchTerm(category)} in ${input.area}`)
+      searchPlaces(apiKey, `${categorySearchTerm(category)} in ${input.area}`, pageLimit)
         .then((places) => ({ category, places }))
         .catch((error) => {
           const message = error instanceof Error ? error.message : String(error);
@@ -107,7 +114,7 @@ export async function searchGooglePlacesProspects(
 
   const sorted = businesses
     .sort((a, b) => b.voiceAiScore - a.voiceAiScore)
-    .slice(0, MAX_RESULTS * categories.length);
+    .slice(0, MAX_RESULTS_PER_PAGE * pageLimit * categories.length);
   // Only cache successful, non-empty results — otherwise a transient failure
   // (e.g. a temporary API error) poisons the cache with an empty list for 30 min.
   if (sorted.length > 0 && errors.length === 0) {
@@ -116,7 +123,21 @@ export async function searchGooglePlacesProspects(
   return { businesses: sorted, cached: false, errors };
 }
 
-async function searchPlaces(apiKey: string, textQuery: string): Promise<GooglePlace[]> {
+async function searchPlaces(apiKey: string, textQuery: string, pageLimit: number): Promise<GooglePlace[]> {
+  const places: GooglePlace[] = [];
+  let pageToken: string | undefined;
+
+  for (let page = 0; page < pageLimit; page += 1) {
+    const data = await searchPlacesPage(apiKey, textQuery, pageToken);
+    places.push(...(data.places ?? []));
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+
+  return places;
+}
+
+async function searchPlacesPage(apiKey: string, textQuery: string, pageToken?: string): Promise<SearchResponse> {
   const response = await fetch(GOOGLE_PLACES_ENDPOINT, {
     method: "POST",
     headers: {
@@ -126,9 +147,10 @@ async function searchPlaces(apiKey: string, textQuery: string): Promise<GooglePl
     },
     body: JSON.stringify({
       textQuery,
-      maxResultCount: MAX_RESULTS,
+      maxResultCount: MAX_RESULTS_PER_PAGE,
       regionCode: "GB",
       locationRestriction: { rectangle: UK_RECTANGLE },
+      ...(pageToken ? { pageToken } : {}),
     }),
   });
 
@@ -137,7 +159,13 @@ async function searchPlaces(apiKey: string, textQuery: string): Promise<GooglePl
     throw new Error(`Google Places failed: ${data.error?.message ?? response.statusText}`);
   }
 
-  return data.places ?? [];
+  return data;
+}
+
+function getPlacesPageLimit(): number {
+  const configured = Number(getEnvValue("PLACES_SEARCH_PAGE_LIMIT") ?? DEFAULT_MAX_PAGES_PER_QUERY);
+  if (!Number.isFinite(configured)) return DEFAULT_MAX_PAGES_PER_QUERY;
+  return Math.min(Math.max(Math.floor(configured), 1), ABSOLUTE_MAX_PAGES_PER_QUERY);
 }
 
 function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, area: string): Business {

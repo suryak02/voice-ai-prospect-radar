@@ -1,11 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { getEnvValue } from "@/lib/env";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = getEnvValue("DATABASE_URL");
 
 if (!databaseUrl) {
   throw new Error("DATABASE_URL is required to create a Prisma client.");

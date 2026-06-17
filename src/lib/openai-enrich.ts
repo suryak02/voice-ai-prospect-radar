@@ -1,4 +1,5 @@
 import { CATEGORY_META, CATEGORY_VALUES } from "@/lib/categories";
+import { getEnvValue } from "@/lib/env";
 
 /**
  * OpenAI enrichment with two depths:
@@ -31,7 +32,7 @@ export type EnrichInput = {
 export type Enrichment = { summary: string; angle: string; category?: string; usedWebsite?: boolean };
 
 export function resolveOpenAiModel(): string {
-  return process.env.OPENAI_MODEL || DEFAULT_MODEL;
+  return getEnvValue("OPENAI_MODEL") || DEFAULT_MODEL;
 }
 
 const CATEGORY_LIST = CATEGORY_VALUES.map((value) => `${value} (${CATEGORY_META[value].label})`).join(", ");
@@ -88,7 +89,7 @@ async function fetchWebsiteText(url: string): Promise<string | null> {
 }
 
 export async function enrichBusiness(input: EnrichInput, opts: { deep?: boolean } = {}): Promise<Enrichment | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getEnvValue("OPENAI_API_KEY");
   if (!apiKey) return null;
 
   const websiteText = opts.deep && input.website ? await fetchWebsiteText(input.website) : null;

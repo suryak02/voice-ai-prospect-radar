@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, Navigation, Phone, ShieldCheck, Sparkles } from "lucide-react";
+import { ClipboardCheck, Copy, ExternalLink, Navigation, Phone, ShieldCheck, Sparkles } from "lucide-react";
+import { readJsonResponse } from "@/lib/http-json";
 import { buildSpecificReasoning, buildVoiceAiAngle } from "@/lib/prospect-insights";
+import { buildProspectContextFromBusiness } from "@/lib/prospect-context";
+import { buildReceptionistSandboxBrief } from "@/lib/receptionist-sandbox-brief";
 import { getScoreLabel, getScorePillClasses } from "@/lib/scoring";
 import type { Business } from "@/lib/types";
 
@@ -72,6 +75,7 @@ export function BusinessDetailPanel({
   const [enrichStatus, setEnrichStatus] = useState<"idle" | "loading" | "error">("idle");
   const [enrichError, setEnrichError] = useState("");
   const [depthMode, setDepthMode] = useState<ResearchDepth>("standard");
+  const [copyStatus, setCopyStatus] = useState<"idle" | "copying" | "copied" | "error">("idle");
   const [trackedBusinessId, setTrackedBusinessId] = useState(business.id);
 
   // Reset transient AI state when a different prospect is selected (the
@@ -82,6 +86,7 @@ export function BusinessDetailPanel({
     setEnrichStatus("idle");
     setEnrichError("");
     setDepthMode("standard");
+    setCopyStatus("idle");
   }
 
   // Freshly generated analysis wins; otherwise fall back to the DB-cached one.
@@ -90,6 +95,16 @@ export function BusinessDetailPanel({
     (business.aiSummary
       ? { summary: business.aiSummary, angle: business.aiAngle, category: business.aiCategory, depth: business.aiDepth, enrichedAt: business.aiEnrichedAt }
       : null);
+  const businessForSandboxBrief: Business = enrichment
+    ? {
+        ...business,
+        aiSummary: enrichment.summary,
+        aiAngle: enrichment.angle,
+        aiCategory: enrichment.category,
+        aiDepth: enrichment.depth,
+        aiEnrichedAt: enrichment.enrichedAt,
+      }
+    : business;
 
   async function generateAiAnalysis(mode: ResearchDepth) {
     setEnrichStatus("loading");
@@ -100,13 +115,25 @@ export function BusinessDetailPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessId: business.id, mode }),
       });
-      const data = (await response.json()) as EnrichmentState & { error?: string };
-      if (!response.ok) throw new Error(data.error ?? "AI analysis failed.");
+      const data = await readJsonResponse<EnrichmentState & { error?: string }>(response);
       setGenerated({ summary: data.summary, angle: data.angle, category: data.category, depth: data.depth, enrichedAt: data.enrichedAt });
       setEnrichStatus("idle");
     } catch (error) {
       setEnrichStatus("error");
       setEnrichError(error instanceof Error ? error.message : "AI analysis failed.");
+    }
+  }
+
+  async function copySandboxBrief() {
+    setCopyStatus("copying");
+    try {
+      const prospectContext = buildProspectContextFromBusiness(businessForSandboxBrief);
+      const brief = buildReceptionistSandboxBrief(businessForSandboxBrief, prospectContext);
+      await navigator.clipboard.writeText(JSON.stringify(brief, null, 2));
+      setCopyStatus("copied");
+    } catch (error) {
+      console.error("Failed to copy sandbox brief", error);
+      setCopyStatus("error");
     }
   }
 
@@ -280,12 +307,12 @@ export function BusinessDetailPanel({
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+      <div className="voice-ai-angle-card mt-6 rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-300" />
           <div>
-            <h3 className="text-sm font-semibold text-emerald-50">Recommended Voice AI angle</h3>
-            <p className="mt-1 text-sm leading-6 text-emerald-100/80">{voiceAiAngle}</p>
+            <h3 className="voice-ai-angle-title text-sm font-semibold text-emerald-50">Recommended Voice AI angle</h3>
+            <p className="voice-ai-angle-body mt-1 text-sm leading-6 text-emerald-100/80">{voiceAiAngle}</p>
           </div>
         </div>
       </div>
@@ -315,6 +342,21 @@ export function BusinessDetailPanel({
           className="rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07]"
         >
           {hasOpenTicket ? "Change to not fit" : "Mark not fit"}
+        </button>
+        <button
+          type="button"
+          onClick={copySandboxBrief}
+          disabled={copyStatus === "copying"}
+          className="inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] disabled:opacity-50"
+        >
+          {copyStatus === "copied" ? <ClipboardCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copyStatus === "copying"
+            ? "Copying..."
+            : copyStatus === "copied"
+              ? "Sandbox brief copied"
+              : copyStatus === "error"
+                ? "Copy failed"
+                : "Copy sandbox brief"}
         </button>
       </div>
 

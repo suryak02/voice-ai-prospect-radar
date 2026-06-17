@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { enrichBusiness, resolveOpenAiModel } from "@/lib/openai-enrich";
+import { getEnvValue } from "@/lib/env";
 import { checkRateLimit, cleanupRateLimitBuckets } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // A business is only re-analyzed once a week (per depth). Within the cooldown,
 // every request (including "refresh" spam) is served from the database.
@@ -13,10 +18,19 @@ const schema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  if (!process.env.DATABASE_URL) {
+  try {
+    return await handlePost(request);
+  } catch (error) {
+    console.error("AI analysis request failed.", error);
+    return NextResponse.json({ error: getRequestErrorMessage(error) }, { status: getRequestErrorStatus(error) });
+  }
+}
+
+async function handlePost(request: NextRequest) {
+  if (!getEnvValue("DATABASE_URL")) {
     return NextResponse.json({ error: "AI analysis needs a database connection." }, { status: 503 });
   }
-  if (!process.env.OPENAI_API_KEY) {
+  if (!getEnvValue("OPENAI_API_KEY")) {
     return NextResponse.json({ error: "AI analysis isn't configured yet (missing OPENAI_API_KEY)." }, { status: 503 });
   }
 
@@ -99,4 +113,22 @@ export async function POST(request: NextRequest) {
     enrichedAt: enrichedAt.toISOString(),
     cached: false,
   });
+}
+
+function getRequestErrorMessage(error: unknown): string {
+  if (getPrismaErrorCode(error) === "P1001") {
+    return "AI analysis could not reach the production database. Check the Vercel DATABASE_URL and try again.";
+  }
+  return "AI analysis failed. Please try again.";
+}
+
+function getRequestErrorStatus(error: unknown): number {
+  if (getPrismaErrorCode(error) === "P1001") return 503;
+  return 500;
+}
+
+function getPrismaErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== "object" || !("code" in error)) return null;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === "string" ? code : null;
 }

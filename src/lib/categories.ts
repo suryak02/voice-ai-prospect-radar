@@ -17,6 +17,7 @@ export type CategoryGroup =
   | "Beauty & personal care"
   | "Home & trade services"
   | "Professional services"
+  | "Hospitality & guest services"
   | "Other";
 
 export type CategoryCopy = {
@@ -430,6 +431,24 @@ export const CATEGORY_META: Record<BusinessCategory, CategoryMeta> = {
   },
 
   // ───────────────────────── Low-fit / contrast ─────────────────────────
+  hotel: {
+    value: "hotel",
+    label: "Hotels",
+    group: "Hospitality & guest services",
+    searchTerm: "hotel or boutique hotel",
+    inferKeywords: ["boutique hotel", "guest house", "guesthouse", "bed and breakfast", "b&b", "hotel", "inn"],
+    appointmentBased: true,
+    highValueService: true,
+    fitTier: "high",
+    useCase:
+      "AI concierge and reservations assistant for missed calls, room enquiries, booking changes, FAQs, and after-hours guest routing.",
+    copy: {
+      buyer: "Hotels depend on fast response for room enquiries, booking changes, and guest questions, especially outside front-desk hours.",
+      frontDeskJob: "answer availability and stay FAQs, capture booking intent, handle amendments, and route urgent guest requests",
+      missedCallPain: "a missed call can lose a room enquiry, group booking, or guest-service recovery moment to a faster competitor",
+      qualification: "stay dates, room count, guest count, purpose of stay, amendment need, and urgency",
+    },
+  },
   retail: {
     value: "retail",
     label: "Retail (contrast)",
@@ -497,6 +516,7 @@ export const CATEGORY_GROUP_ORDER: CategoryGroup[] = [
   "Beauty & personal care",
   "Home & trade services",
   "Professional services",
+  "Hospitality & guest services",
   "Other",
 ];
 

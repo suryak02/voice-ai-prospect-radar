@@ -24,6 +24,8 @@ export type BusinessCategory =
   | "accountant"
   | "estate_agent"
   | "insurance"
+  // Hospitality & guest services
+  | "hotel"
   // Low-fit / contrast
   | "retail"
   | "restaurant"

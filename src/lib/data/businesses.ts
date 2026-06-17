@@ -1,9 +1,10 @@
 import { mockBusinesses } from "@/lib/mock-businesses";
+import { getEnvValue } from "@/lib/env";
 import { normalizeTicketStatus } from "@/lib/tickets";
 import { isInUk } from "@/lib/uk-bounds";
 import type { Business, ScoreBreakdown, Ticket } from "@/lib/types";
 
-const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const hasDatabaseUrl = Boolean(getEnvValue("DATABASE_URL"));
 
 export async function getBusinesses(): Promise<Business[]> {
   if (!hasDatabaseUrl) return mockBusinesses;

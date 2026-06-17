@@ -57,6 +57,7 @@ const defaultSeedCategories: BusinessCategory[] = [
   "plumber",
   "electrician",
   "accountant",
+  "hotel",
 ];
 
 function buildDefaultQueries(): string[] {

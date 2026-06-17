@@ -28,6 +28,7 @@ enum BusinessCategory {
   accountant
   estate_agent
   insurance
+  hotel
   retail
   restaurant
   other

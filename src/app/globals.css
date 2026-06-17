@@ -3,6 +3,14 @@
 :root {
   --background: #050608;
   --foreground: #f7f8f8;
+  --surface-panel: rgba(255, 255, 255, 0.035);
+  --surface-inset: rgba(2, 6, 23, 0.32);
+  --surface-overlay: rgba(2, 6, 23, 0.58);
+  --surface-tooltip: rgba(16, 17, 20, 0.95);
+  --map-canvas: #07090d;
+  --map-scrim: linear-gradient(to bottom, rgba(2, 6, 23, 0.05), rgba(2, 6, 23, 0.24));
+  --line-soft: rgba(255, 255, 255, 0.1);
+  --panel-shadow: rgba(0, 0, 0, 0.22);
 }
 
 @theme inline {
@@ -48,6 +56,212 @@ button:disabled {
   background: rgba(113, 112, 255, 0.35);
 }
 
+/* ------------------------------ Responsive shells ------------------------------ */
+
+.app-page-shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: none;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.dashboard-workspace-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.map-canvas-shell {
+  background: var(--map-canvas);
+  border-color: var(--line-soft);
+}
+
+.map-canvas-scrim {
+  background: var(--map-scrim);
+}
+
+.map-overlay-card,
+.map-action-button,
+.map-marker-tooltip {
+  border-color: var(--line-soft);
+  color: var(--foreground);
+}
+
+.map-overlay-card,
+.map-action-button {
+  background: var(--surface-overlay);
+}
+
+.map-marker-tooltip {
+  background: var(--surface-tooltip);
+}
+
+.category-chip-active {
+  background-color: rgba(99, 102, 241, 0.28) !important;
+  border-color: rgba(199, 210, 254, 0.72) !important;
+  color: #f8fafc !important;
+}
+
+.voice-ai-angle-card {
+  color: #d1fae5;
+}
+
+.leaflet-container {
+  background: var(--map-canvas);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.leaflet-control-zoom {
+  border: 1px solid var(--line-soft) !important;
+  border-radius: 1rem !important;
+  overflow: hidden;
+  box-shadow: 0 1.2rem 3rem var(--panel-shadow) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--surface-overlay) !important;
+  border-bottom-color: var(--line-soft) !important;
+  color: var(--foreground) !important;
+}
+
+.leaflet-control-attribution {
+  background: var(--surface-overlay) !important;
+  color: color-mix(in srgb, var(--foreground) 72%, transparent) !important;
+}
+
+.leaflet-control-attribution a {
+  color: color-mix(in srgb, var(--foreground) 84%, transparent) !important;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: var(--surface-tooltip) !important;
+  color: var(--foreground) !important;
+  box-shadow: 0 1.4rem 4rem var(--panel-shadow) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border: 1px solid var(--line-soft);
+  border-radius: 1rem !important;
+  backdrop-filter: blur(18px);
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 15rem;
+}
+
+.leaflet-popup-close-button {
+  color: color-mix(in srgb, var(--foreground) 72%, transparent) !important;
+  padding: 0.4rem 0.45rem 0 0 !important;
+}
+
+.map-leaflet-popup {
+  padding: 0.85rem;
+}
+
+.map-leaflet-popup-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.map-leaflet-popup-header strong {
+  font-size: 0.9rem;
+  line-height: 1.25rem;
+}
+
+.map-leaflet-popup-header span {
+  border-radius: 999px;
+  background: var(--foreground);
+  color: var(--background);
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0.35rem 0.5rem;
+}
+
+.map-leaflet-popup p {
+  color: color-mix(in srgb, var(--foreground) 72%, transparent);
+  font-size: 0.78rem;
+  line-height: 1.2rem;
+  margin-top: 0.45rem;
+}
+
+.map-leaflet-popup dl {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.7rem;
+}
+
+.map-leaflet-popup dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 0.35rem;
+}
+
+.map-leaflet-popup dt {
+  color: color-mix(in srgb, var(--foreground) 54%, transparent);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.map-leaflet-popup dd {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.map-expanded-shell {
+  background: rgba(2, 6, 23, 0.82);
+}
+
+@media (min-width: 640px) {
+  .app-page-shell {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-page-shell {
+    padding-inline: 2rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .dashboard-workspace-grid {
+    grid-template-columns:
+      minmax(280px, 0.8fr)
+      minmax(560px, 1.6fr)
+      minmax(320px, 1fr);
+    align-items: start;
+  }
+}
+
+@media (min-width: 1600px) {
+  .dashboard-workspace-grid {
+    grid-template-columns:
+      minmax(300px, clamp(320px, 18vw, 460px))
+      minmax(720px, 1fr)
+      minmax(360px, clamp(400px, 22vw, 620px));
+  }
+}
+
+@media (min-width: 1800px) {
+  .app-page-shell {
+    padding-inline: clamp(2rem, 2.4vw, 4rem);
+  }
+
+  .dashboard-workspace-grid {
+    gap: clamp(1.5rem, 1.6vw, 2.5rem);
+  }
+}
+
 /* ------------------------------ Light theme ------------------------------ */
 /* Dark is the default look (above). Light mode is layered on via `html.light`,
    overriding only the dark-assuming Tailwind utilities so component markup is
@@ -56,15 +270,25 @@ button:disabled {
    placed last so they beat the generic text overrides on equal specificity. */
 
 html.light {
-  background: #e9edf3;
+  --background: #f6f8fb;
+  --foreground: #0f172a;
+  --surface-panel: rgba(255, 255, 255, 0.84);
+  --surface-inset: rgba(248, 250, 252, 0.82);
+  --surface-overlay: rgba(255, 255, 255, 0.9);
+  --surface-tooltip: rgba(255, 255, 255, 0.96);
+  --map-canvas: #e6edf4;
+  --map-scrim: linear-gradient(to bottom, rgba(248, 250, 252, 0), rgba(15, 23, 42, 0.08));
+  --line-soft: rgba(15, 23, 42, 0.13);
+  --panel-shadow: rgba(15, 23, 42, 0.11);
+  background: var(--background);
 }
 
 html.light body {
   background:
-    radial-gradient(circle at 18% 0%, rgba(94, 106, 210, 0.12), transparent 34rem),
-    radial-gradient(circle at 85% 12%, rgba(14, 165, 233, 0.1), transparent 30rem),
-    linear-gradient(180deg, #f4f6fa 0%, #e9edf3 48%, #e4e9f1 100%);
-  color: #0f172a;
+    radial-gradient(circle at 16% -8%, rgba(20, 184, 166, 0.15), transparent 34rem),
+    radial-gradient(circle at 84% 8%, rgba(59, 130, 246, 0.1), transparent 30rem),
+    linear-gradient(180deg, #fbfcfe 0%, #f3f7fb 46%, #e9eff6 100%);
+  color: var(--foreground);
 }
 
 /* Raised glass panels → frosted white */
@@ -72,31 +296,87 @@ html.light .bg-white\/\[0\.035\],
 html.light .bg-white\/\[0\.04\],
 html.light .bg-white\/\[0\.03\],
 html.light .bg-white\/\[0\.06\] {
-  background-color: rgba(255, 255, 255, 0.72);
+  background-color: var(--surface-panel);
 }
 
 /* Nested insets → faint slate */
+html.light .bg-black\/10,
 html.light .bg-black\/20,
-html.light .bg-black\/25 {
-  background-color: rgba(15, 23, 42, 0.045);
+html.light .bg-black\/25,
+html.light .bg-black\/30 {
+  background-color: var(--surface-inset);
 }
 
 /* Map overlay cards, tooltip, container, dropdown option backgrounds */
-html.light .bg-black\/45 { background-color: rgba(255, 255, 255, 0.82); }
-html.light .bg-\[\#07090d\] { background-color: #e6ebf2; }
-html.light .bg-\[\#101114\] { background-color: #ffffff; }
+html.light .bg-black\/45,
+html.light .bg-black\/55 { background-color: var(--surface-overlay); }
+html.light .bg-\[\#07090d\] { background-color: var(--map-canvas); }
+html.light .bg-\[\#101114\],
+html.light .bg-\[\#101114\]\/95 { background-color: var(--surface-tooltip); }
 html.light .bg-slate-950 { background-color: #ffffff; }
 html.light .bg-slate-950\/10 { background-color: rgba(15, 23, 42, 0.04); }
-html.light .bg-black\/80 { background-color: rgba(15, 23, 42, 0.45); }
+html.light .bg-black\/80 { background-color: rgba(15, 23, 42, 0.34); }
+
+/* Light theme primary actions */
+html.light .bg-white {
+  background-color: #0f172a;
+}
+
+html.light .bg-white.text-slate-950 {
+  color: #ffffff;
+}
+
+html.light .hover\:bg-slate-200:hover {
+  background-color: #1e293b;
+}
 
 /* Borders */
 html.light .border-white\/10 { border-color: rgba(15, 23, 42, 0.12); }
+html.light .border-indigo-300\/15,
+html.light .border-indigo-300\/20,
+html.light .border-indigo-300\/40,
+html.light .border-indigo-300\/50,
+html.light .border-indigo-300\/70,
+html.light .border-indigo-300\/80 {
+  border-color: rgba(13, 148, 136, 0.28);
+}
+
+html.light .border-violet-300\/20,
+html.light .border-violet-300\/25,
+html.light .border-violet-300\/30 {
+  border-color: rgba(124, 58, 237, 0.28);
+}
+
+html.light .outline-violet-300\/80 {
+  outline-color: rgba(124, 58, 237, 0.72);
+}
+
+/* Accent surfaces */
+html.light .bg-indigo-300\/10,
+html.light .bg-indigo-300\/12,
+html.light .bg-indigo-300\/15,
+html.light .bg-indigo-300\/20,
+html.light .bg-indigo-300\/25,
+html.light .bg-indigo-300\/\[0\.06\] {
+  background-color: rgba(20, 184, 166, 0.11);
+}
+
+html.light .bg-violet-300\/10,
+html.light .bg-violet-300\/15,
+html.light .bg-violet-300\/\[0\.07\] {
+  background-color: rgba(124, 58, 237, 0.11);
+}
 
 /* Hover surfaces */
 html.light .hover\:bg-white\/\[0\.06\]:hover,
 html.light .hover\:bg-white\/\[0\.07\]:hover,
-html.light .hover\:bg-white\/\[0\.1\]:hover {
+html.light .hover\:bg-white\/\[0\.1\]:hover,
+html.light .hover\:bg-white\/\[0\.12\]:hover {
   background-color: rgba(255, 255, 255, 0.95);
+}
+
+html.light .hover\:bg-violet-300\/15:hover {
+  background-color: rgba(124, 58, 237, 0.16);
 }
 
 /* Text scale (light → dark equivalents) */
@@ -107,20 +387,55 @@ html.light .text-slate-300 { color: #475569; }
 html.light .text-slate-400 { color: #64748b; }
 html.light .text-slate-500 { color: #64748b; }
 html.light .text-slate-600 { color: #94a3b8; }
+html.light .text-slate-950 { color: #0f172a; }
 
 /* Accent text → readable on light */
-html.light .text-indigo-100 { color: #4338ca; }
-html.light .text-indigo-200 { color: #4f46e5; }
-html.light .text-indigo-300 { color: #6366f1; }
+html.light .text-indigo-100 { color: #0f766e; }
+html.light .text-indigo-100\/70 { color: rgba(15, 118, 110, 0.78); }
+html.light .text-indigo-200 { color: #0d9488; }
+html.light .text-indigo-200\/70,
+html.light .text-indigo-200\/80 { color: rgba(13, 148, 136, 0.76); }
+html.light .text-indigo-300 { color: #0f766e; }
 html.light .text-emerald-50 { color: #065f46; }
 html.light .text-emerald-100 { color: #047857; }
 html.light .text-emerald-300 { color: #059669; }
 html.light .text-rose-100 { color: #be123c; }
 html.light .text-rose-300 { color: #e11d48; }
+html.light .text-violet-100 { color: #6d28d9; }
+html.light .text-violet-300 { color: #7c3aed; }
+html.light .text-violet-950 { color: #2e1065; }
 html.light .text-fuchsia-100 { color: #a21caf; }
 html.light .text-amber-100 { color: #b45309; }
 html.light .text-sky-100 { color: #0369a1; }
 html.light .hover\:text-white:hover { color: #0f172a; }
+
+html.light .shadow-black\/20,
+html.light .shadow-black\/30 {
+  --tw-shadow-color: var(--panel-shadow);
+}
+
+html.light .map-expanded-shell {
+  background: rgba(226, 233, 241, 0.94);
+}
+
+html.light .category-chip-active {
+  background-color: #0f766e !important;
+  border-color: rgba(15, 118, 110, 0.82) !important;
+  color: #ffffff !important;
+}
+
+html.light .voice-ai-angle-card {
+  background-color: rgba(16, 185, 129, 0.13);
+  border-color: rgba(4, 120, 87, 0.28);
+}
+
+html.light .voice-ai-angle-title {
+  color: #064e3b;
+}
+
+html.light .voice-ai-angle-body {
+  color: #065f46;
+}
 
 /* Restore white text on solid coloured surfaces (score markers + primary
    buttons). Last so it wins over the generic text overrides above. */
@@ -129,6 +444,7 @@ html.light .bg-rose-500,
 html.light .bg-sky-500,
 html.light .bg-slate-600,
 html.light .bg-indigo-500,
-html.light .bg-indigo-400 {
+html.light .bg-indigo-400,
+html.light .bg-white.text-slate-950 {
   color: #ffffff;
 }

@@ -1,36 +1,44 @@
-# Voice AI Prospect Map
+# Voice AI Prospect Radar
 
-A deployed prospect-intelligence map that helps Voice AI companies prioritise local businesses likely to benefit from AI call handling, appointment booking, reminders, and customer-service automation.
+A gated prospect-intelligence map for Voice AI teams. It helps answer a practical go-to-market question: which local businesses are most likely to benefit from AI call handling, appointment booking, reminders, and customer-service automation?
 
 Live demo: https://voice-ai-prospect-map.vercel.app  
 Access is gated. Credentials are available on request.
 
-![Voice AI Prospect Map demo](docs/demo.gif)
+![Voice AI Prospect Radar demo](docs/demo.gif)
+
+Current walkthrough: dashboard, saved UK map, AI prospect brief, live Places search, and review pipeline.
+
+This repository is a showcase copy for discussing the product, UX, and engineering judgement behind the work. It is not packaged or maintained as an open-source product, and the implementation notes here are intentionally high level rather than a full operator playbook.
 
 ## Why I built this
 
-Voice AI vendors do not just need a list of local businesses. They need to know which businesses are most likely to have missed-call, booking, receptionist, or customer-service pain, and which ones are worth human outreach first.
+Voice AI vendors do not just need a list of local businesses. They need to know which businesses are likely to have missed-call, booking, receptionist, or customer-service pain, and which ones are worth human outreach first.
 
-This project turns that go-to-market problem into a working AI workflow: search a territory, score local businesses, map the opportunity, generate a prospect brief, and save follow-up decisions.
+This project turns that go-to-market problem into a working workflow: search a territory, score local businesses, map the opportunity, generate a prospect brief, and save follow-up decisions.
 
 ## What it does
 
-- Searches real UK businesses through Google Places.
-- Scores each business from 0 to 9 for Voice AI fit.
-- Shows ranked prospects on a Google Map with shortlist and filters.
-- Explains the score with visible public-signal breakdowns.
-- Generates an OpenAI-written prospect brief and outreach angle on demand.
-- Supports admin-only deep research that attempts to fetch the business website and uses extracted page text when available for a more grounded brief.
-- Saves review decisions in a ticket-style queue.
-- Defaults to an all-vertical saved map so demos can browse the full territory without spending live API calls.
+- Searches real UK local businesses across 24 business categories.
+- Scores each business from 0 to 9 for Voice AI fit using explainable public signals.
+- Shows ranked prospects on a fast interactive map with shortlist, filters, and an expanded map view.
+- Lets reviewers refine the saved or current result set by business name, area, address, vertical, use case, review signals, and score.
+- Explains each score with a visible signal breakdown rather than hiding the ranking behind a black-box AI model.
+- Generates an AI-written prospect brief and outreach angle on demand.
+- Supports an admin-only deeper research mode that can use public website text when available.
+- Saves review decisions in a ticket pipeline with drag-and-drop status changes and quick business-context popups.
+- Exports structured prospect context for a separate voice-agent scenario lab.
+- Supports light and dark themes with responsive desktop, ultrawide, and map-focused layouts.
+- Defaults to a saved all-vertical map so demos can browse the territory without spending live search calls.
 
 ## What this demonstrates
 
 - Turning a vague GTM idea into a deployed AI product workflow.
-- Integrating Google Places, Google Maps, OpenAI, Supabase/Postgres, Prisma, Upstash Redis, and Vercel.
-- Designing explainable scoring rather than opaque AI ranking.
-- Building cost-aware LLM enrichment with caching, cooldowns, rate limits, and access tiers.
-- Handling a realistic public/private repo split for a gated demo without exposing internal notes or secrets.
+- Combining real-world business discovery, geospatial UX, explainable scoring, AI enrichment, and review operations.
+- Designing deterministic ranking logic instead of relying on opaque AI judgement.
+- Keeping the expensive AI path controlled through access tiers, caching, cooldowns, and rate limits.
+- Separating business discovery from map rendering so the UI stays responsive as result sets grow.
+- Handling a realistic private-build/public-showcase split without exposing credentials, internal notes, or the full operating recipe.
 - Shipping a stakeholder-friendly interface, not just a backend script or chatbot.
 
 ## Demo flow
@@ -39,35 +47,23 @@ This project turns that go-to-market problem into a working AI workflow: search 
 2. Select a high-scoring business and inspect the score breakdown.
 3. Generate an AI prospect brief and outreach angle.
 4. Run a targeted live search for a UK area and selected verticals.
-5. Filter the current result set by vertical and minimum score.
+5. Refine the current result set by text search, vertical, and minimum score.
 6. Open or reject review tickets for follow-up.
+7. Move tickets through the outreach pipeline and reopen saved business context from any ticket card.
+8. Copy a structured sandbox brief for a selected prospect.
 
-## Architecture
+## How it works
 
-```text
-User / reviewer
-  ↓
-Next.js 16 App Router UI
-  ↓
-API routes
-  ├─ /api/businesses       saved prospect map
-  ├─ /api/prospect-search  live Google Places search
-  ├─ /api/enrich           OpenAI prospect briefs
-  ├─ /api/tickets          review queue
-  └─ /api/me               admin/demo tier
-  ↓
-Supabase Postgres via Prisma 7
-  ├─ businesses
-  └─ tickets
-  ↓
-External services
-  ├─ Google Places API
-  ├─ Google Maps JavaScript API
-  ├─ OpenAI API
-  └─ Upstash Redis for shared cache/rate limits
-```
+At a high level, the app has four layers:
 
-The app uses deterministic scoring for the ranking and reserves LLM calls for explanatory prospect briefs. That keeps the ranking inspectable and the AI spend controlled.
+- a responsive browser experience for searching, mapping, filtering, and reviewing prospects
+- server-side routes that coordinate saved data, live search, AI enrichment, auth state, and ticket updates
+- a persistent store for businesses, generated briefs, and review tickets
+- external business-data, AI, caching, and hosting services
+
+The exact provider wiring, version list, environment variables, and deployment setup are intentionally omitted from this public-facing README. The goal here is to show the product and engineering shape without publishing the entire build recipe.
+
+The ranking itself is deterministic. AI is reserved for explanatory prospect briefs and outreach angles, which keeps the score inspectable and makes the cost profile easier to control.
 
 ## Scoring model
 
@@ -85,74 +81,34 @@ The score is intentionally explainable. The UI shows why a prospect ranked highl
 
 ## AI enrichment
 
-OpenAI is used on demand to generate:
+AI is used on demand to generate:
 
 - a short prospect summary
 - the likely operational pain
 - a practical outreach angle
-- optional admin-only deep research using fetched website text when available
+- optional admin-only deeper research using public website text when available
 
-AI output is saved in Postgres and reused with a cooldown so repeated demo clicks do not burn tokens.
+Generated output is cached and reused with a cooldown so repeated demo clicks do not create unnecessary cost.
 
-## Cost and abuse controls
+## Access and controls
 
-- Gated demo with admin and demo tiers.
-- Demo users cannot access deep research.
-- Redis-backed rate limits for expensive endpoints when Upstash is configured.
-- Short-lived Google Places search cache.
-- Postgres cache for AI enrichment output.
-- Low-cost OpenAI model by default.
-- Server/browser split for Google API keys.
+- The live demo is gated.
+- Admin and demo users have different access levels.
+- Demo users cannot access deeper research.
+- Expensive endpoints are protected with rate limits and cache layers.
+- Provider credentials and operational details stay in private environment configuration, not committed docs.
 
-## Tech stack
+## Current status
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS v4
-- Prisma 7 with Supabase Postgres
-- Google Places API and Google Maps JavaScript API
-- OpenAI API
-- Upstash Redis
-- Vercel
+This is ready as a portfolio MVP: deployed, gated, backed by real UK business data, and built with controls around expensive AI and live-search paths.
 
-## Local setup
+The remaining work is product expansion rather than launch cleanup:
 
-```bash
-npm install
-cp .env.example .env.local
-# Fill .env.local with Supabase/Postgres, Google Maps/Places, and OpenAI keys
-npm run db:push
-npm run db:seed
-npm run dev
-```
-
-For a reviewer who only wants to inspect the product, use the deployed gated demo. Local setup requires your own provider keys and may incur Google/OpenAI usage costs.
-
-Fill `.env.local` with your own provider keys. Real credentials should stay in Vercel environment variables and local `.env.local`, never in committed docs.
-
-Useful checks:
-
-```bash
-npm run lint
-npm test
-npm run build
-```
-
-If you change the scoring rubric, rescore stored businesses:
-
-```bash
-npm run db:rescore
-```
-
-## Environment variables
-
-See `.env.example` for the full list. The important split is:
-
-- server-only: database URL, OpenAI key, Google Places key, Redis token, and gate passwords
-- browser-safe: `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, restricted by HTTP referrer in Google Cloud
-
-Only variables prefixed with `NEXT_PUBLIC_` are bundled into browser code.
+- add stronger postcode-aware territory search for full UK postcodes and outward codes such as `NW1`
+- build a larger saved prospect database through controlled offline ingestion
+- connect the exported sandbox brief to a separate voice-agent scenario lab
+- optionally add an ungated public demo mode with stricter quotas
+- add browser smoke tests for the map, filters, theme toggle, and ticket workflow
 
 ## Roadmap
 
@@ -160,4 +116,4 @@ See [`ROADMAP.md`](ROADMAP.md) for future improvements. The current build is int
 
 ## Case study
 
-See [`CASE_STUDY.md`](CASE_STUDY.md) for the product framing, architecture decisions, tradeoffs, and resume-safe project summary.
+See [`CASE_STUDY.md`](CASE_STUDY.md) for the product framing, tradeoffs, and resume-safe project summary.

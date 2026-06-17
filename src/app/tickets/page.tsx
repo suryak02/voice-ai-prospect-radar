@@ -1,21 +1,31 @@
 import { TicketPipelineBoard, PipelineBackLink } from "@/components/ticket-pipeline-board";
 import { ThemeToggle } from "@/components/theme-provider";
-import { getTickets } from "@/lib/data/businesses";
-import type { Ticket } from "@/lib/types";
+import { getBusinesses, getTickets } from "@/lib/data/businesses";
+import type { Business, Ticket } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function TicketsPage() {
   let tickets: Ticket[] = [];
-  try {
-    tickets = await getTickets();
-  } catch (error) {
-    console.error("Failed to load ticket pipeline. Rendering an empty board for demo stability.", error);
+  let businesses: Business[] = [];
+
+  const [ticketResult, businessResult] = await Promise.allSettled([getTickets(), getBusinesses()]);
+
+  if (ticketResult.status === "fulfilled") {
+    tickets = ticketResult.value;
+  } else {
+    console.error("Failed to load ticket pipeline. Rendering an empty board for demo stability.", ticketResult.reason);
+  }
+
+  if (businessResult.status === "fulfilled") {
+    businesses = businessResult.value;
+  } else {
+    console.error("Failed to load business context for ticket pipeline.", businessResult.reason);
   }
 
   return (
     <main className="min-h-screen text-slate-100">
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
+      <section className="app-page-shell flex flex-col gap-6">
         <header className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-4xl">
@@ -36,7 +46,7 @@ export default async function TicketsPage() {
           </div>
         </header>
 
-        <TicketPipelineBoard initialTickets={tickets} />
+        <TicketPipelineBoard initialTickets={tickets} initialBusinesses={businesses} />
       </section>
     </main>
   );

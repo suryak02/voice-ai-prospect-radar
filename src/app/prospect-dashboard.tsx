@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowUpRight, BarChart3, Eye, EyeOff, Filter, History, Search } from "lucide-react";
+import { ArrowUpRight, BarChart3, Eye, EyeOff, Filter, History, MapPin, Search, X } from "lucide-react";
 import { BusinessDetailPanel } from "@/components/business-detail-panel";
 import { ProspectMap } from "@/components/prospect-map";
 import { ThemeToggle } from "@/components/theme-provider";
 import { CATEGORY_META, getCategoryOptionGroups } from "@/lib/categories";
+import {
+  filterProspects,
+  hasActiveProspectFilters as hasActiveProspectFilterState,
+  resolveSelectedProspect,
+  resolveSelectionAfterFilterReset,
+} from "@/lib/prospect-filters";
 import { getScorePillClasses } from "@/lib/scoring";
 import { calculateTicketMetrics } from "@/lib/tickets";
 import type { Business, BusinessCategory, Ticket } from "@/lib/types";
@@ -24,15 +30,16 @@ type ViewedProspect = Pick<Business, "id" | "name" | "category" | "borough" | "v
 export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Business[] }) {
   const [businesses, setBusinesses] = useState(initialBusinesses);
   const [selectedBusinessId, setSelectedBusinessId] = useState(initialBusinesses[0]?.id ?? "");
+  const [prospectQuery, setProspectQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<BusinessCategory | "all">("all");
   const [minimumScore, setMinimumScore] = useState(0);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [searchArea, setSearchArea] = useState("East London");
+  const [searchArea, setSearchArea] = useState("");
   const [targetCategories, setTargetCategories] = useState<BusinessCategory[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchStatus, setSearchStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [searchMessage, setSearchMessage] = useState("Showing the prepared London demo dataset. Run a targeted search to personalize the territory.");
-  const [datasetLabel, setDatasetLabel] = useState("Saved demo dataset · All verticals");
+  const [searchMessage, setSearchMessage] = useState("Showing the prepared UK-wide saved prospect map. Enter an area only when you want a targeted live Google Places search.");
+  const [datasetLabel, setDatasetLabel] = useState("Saved map · UK-wide · All verticals");
   const [viewedProspects, setViewedProspects] = useState<ViewedProspect[]>([]);
   const [focusSelectedOnly, setFocusSelectedOnly] = useState(false);
 
@@ -80,15 +87,20 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     };
   }, []);
 
-  const filteredBusinesses = useMemo(() => {
-    return businesses.filter((business) => {
-      const categoryMatches = categoryFilter === "all" || business.category === categoryFilter;
-      return categoryMatches && business.voiceAiScore >= minimumScore;
-    });
-  }, [businesses, categoryFilter, minimumScore]);
+  const prospectFilters = useMemo(
+    () => ({ query: prospectQuery, categoryFilter, minimumScore }),
+    [categoryFilter, minimumScore, prospectQuery],
+  );
+  const hasActiveProspectFilters = hasActiveProspectFilterState(prospectFilters);
+  const filteredBusinesses = useMemo(() => filterProspects(businesses, prospectFilters), [businesses, prospectFilters]);
 
-  const selectedBusiness =
-    businesses.find((business) => business.id === selectedBusinessId) ?? filteredBusinesses[0] ?? businesses[0];
+  const selectedBusiness = resolveSelectedProspect({
+    businesses,
+    filteredBusinesses,
+    selectedBusinessId,
+    hasActiveFilters: hasActiveProspectFilters,
+  });
+  const selectedBusinessIdForUi = selectedBusiness?.id ?? "";
 
   const mapBusinesses = useMemo(() => {
     if (!focusSelectedOnly || !selectedBusiness) return filteredBusinesses;
@@ -163,12 +175,29 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     });
   }, []);
 
+  const resetProspectFilters = useCallback(() => {
+    setProspectQuery("");
+    setCategoryFilter("all");
+    setMinimumScore(0);
+    setFocusSelectedOnly(false);
+    setSelectedBusinessId((currentSelectedBusinessId) =>
+      resolveSelectionAfterFilterReset(businesses, currentSelectedBusinessId),
+    );
+  }, [businesses]);
+
   function runPersonalizedSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void runSearch();
   }
 
   async function runSearch() {
+    const normalizedSearchArea = searchArea.trim();
+    if (targetCategories.length > 0 && !normalizedSearchArea) {
+      setSearchStatus("error");
+      setSearchMessage("Enter an area or postcode before running a targeted live Google Places search.");
+      return;
+    }
+
     setSearchStatus("loading");
     setSearchMessage(
       targetCategories.length === 0
@@ -185,8 +214,9 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
         const restoredBusinesses = data.businesses;
         setBusinesses(restoredBusinesses);
         selectBusiness(restoredBusinesses[0]);
-        setDatasetLabel("Saved map · All verticals");
+        setDatasetLabel("Saved map · UK-wide · All verticals");
         setCategoryFilter("all");
+        setProspectQuery("");
         setMinimumScore(0);
         setFocusSelectedOnly(false);
         setSearchStatus("success");
@@ -199,7 +229,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
       const response = await fetch("/api/prospect-search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ area: searchArea, categories: targetCategories }),
+        body: JSON.stringify({ area: normalizedSearchArea, categories: targetCategories }),
       });
       const data = (await response.json()) as { businesses?: Business[]; source?: string; error?: string; limitRemaining?: number };
 
@@ -209,14 +239,15 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
 
       setBusinesses(data.businesses);
       selectBusiness(data.businesses[0]);
-      setDatasetLabel(`Live ${data.source === "google_places_cache" ? "Google Places cache" : data.source === "google_places_live" ? "Google Places" : "stored fallback"} · ${targetCategories.length === 1 ? CATEGORY_META[targetCategories[0]].label : `${targetCategories.length} verticals`} · ${searchArea}`);
+      setDatasetLabel(`Live ${data.source === "google_places_cache" ? "Google Places cache" : data.source === "google_places_live" ? "Google Places" : "stored fallback"} · ${targetCategories.length === 1 ? CATEGORY_META[targetCategories[0]].label : `${targetCategories.length} verticals`} · ${normalizedSearchArea}`);
       setCategoryFilter("all");
+      setProspectQuery("");
       setMinimumScore(0);
       setFocusSelectedOnly(false);
       setSearchStatus("success");
       const sourceLabel = data.source === "google_places_live" ? "live Google Places" : data.source === "google_places_cache" ? "cached Google Places" : "stored fallback";
       const verticalsLabel = targetCategories.length === 1 ? CATEGORY_META[targetCategories[0]].label : `${targetCategories.length} verticals`;
-      setSearchMessage(`Loaded ${data.businesses.length} ${sourceLabel} prospects for ${verticalsLabel} in ${searchArea}. Searches left this hour: ${data.limitRemaining ?? "tracked"}.`);
+      setSearchMessage(`Loaded ${data.businesses.length} ${sourceLabel} prospects for ${verticalsLabel} in ${normalizedSearchArea}. Searches left this hour: ${data.limitRemaining ?? "tracked"}.`);
     } catch (error) {
       setSearchStatus("error");
       setSearchMessage(error instanceof Error ? error.message : "Search failed. The prepared demo dataset is still available.");
@@ -274,7 +305,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     setTickets((currentTickets) => [savedTicket, ...currentTickets.filter((currentTicket) => currentTicket.businessId !== business.id)]);
   }
 
-  if (!selectedBusiness) {
+  if (businesses.length === 0) {
     return (
       <main className="min-h-screen text-slate-100">
         <section className="mx-auto flex w-full max-w-[900px] flex-col gap-4 px-4 py-10 sm:px-6 lg:px-8">
@@ -290,21 +321,20 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     );
   }
 
-  const hasOpenTicket = tickets.some((ticket) => ticket.businessId === selectedBusiness.id && ticket.status === "open");
+  const hasOpenTicket = selectedBusiness
+    ? tickets.some((ticket) => ticket.businessId === selectedBusiness.id && ticket.status === "open")
+    : false;
 
   return (
     <main className="min-h-screen text-slate-100">
-      <section className="mx-auto flex w-full max-w-[1800px] flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-300/20 bg-indigo-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-indigo-100">
-                Elyos UK territory demo
-              </div>
-              <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl">
+      <section className="app-page-shell flex flex-col gap-6">
+        <header className="overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-5">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.045em] text-white sm:text-5xl">
                 Prioritise Voice AI prospects by area, urgency, and fit.
               </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-400 sm:text-lg">
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
                 A geospatial prospect intelligence MVP for finding which UK businesses deserve human outreach first.
                 Public signals create the shortlist; people make the final call.
               </p>
@@ -328,57 +358,64 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
             </div>
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-3">
-            <KpiCard label="Current prospects" value={businesses.length.toString()} detail={datasetLabel} />
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+            <KpiCard label="Visible prospects" value={filteredBusinesses.length.toString()} detail={`${businesses.length} total · ${datasetLabel}`} />
             <KpiCard label="High-priority leads" value={highPriorityCount.toString()} detail="Scored 7-9 for human review" />
             <KpiCard label="Average score" value={`${averageScore}/9`} detail="Across current public-signal set" />
           </div>
         </header>
 
-        <section className="rounded-[2rem] border border-indigo-300/15 bg-indigo-300/[0.06] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6">
-          <div className="grid gap-5 lg:grid-cols-[1.1fr_1.4fr] lg:items-end">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/80">Personalized live search</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white">Choose a territory and target vertical.</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">
-                The request is validated, rate-limited, cached, and capped before it can touch Google Places, so the demo feels real without opening a blank cheque on API costs.
+        <section className="rounded-[2rem] border border-indigo-300/15 bg-indigo-300/[0.06] p-4 shadow-2xl shadow-black/20 backdrop-blur-xl">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/80">Live Google Places search</p>
+              <h2 className="mt-1.5 text-xl font-semibold tracking-tight text-white sm:text-2xl">Pick an area, then choose up to six business types.</h2>
+              <p className="mt-1.5 text-sm leading-5 text-slate-400">
+                Google Places supplies the businesses; the Leaflet vector map only renders them. Saved-map mode costs nothing, targeted searches are rate-limited and cached.
               </p>
             </div>
 
-            <form onSubmit={runPersonalizedSearch} className="grid gap-3">
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                <label className="block rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-slate-400">
-                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Area</span>
-                  <input
-                    value={searchArea}
-                    onChange={(event) => setSearchArea(event.target.value)}
-                    minLength={2}
-                    maxLength={80}
-                    placeholder="e.g. Hackney, Manchester, Bristol"
-                    className="mt-2 w-full bg-transparent font-medium text-white outline-none placeholder:text-slate-600"
-                  />
-                </label>
+            <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-slate-300">
+                {datasetLabel}
+              </span>
+              <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-slate-300">
+                {targetCategories.length === 0 ? "Saved map" : `${targetCategories.length}/${MAX_SEARCH_CATEGORIES} selected`}
+              </span>
+            </div>
+          </div>
 
-                <button
-                  type="submit"
-                  disabled={searchStatus === "loading"}
-                  className="rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-slate-500 sm:self-stretch"
-                >
-                  {searchStatus === "loading" ? "Searching..." : targetCategories.length === 0 ? "Show saved map" : "Search live data"}
-                </button>
-              </div>
+          <form onSubmit={runPersonalizedSearch} className="mt-3 grid gap-3 xl:grid-cols-[minmax(260px,1fr)_auto] xl:items-start">
+            <label className="flex min-h-[4.75rem] items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-slate-400">
+              <MapPin className="h-5 w-5 shrink-0 text-indigo-300" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Area or postcode</span>
+                <input
+                  value={searchArea}
+                  onChange={(event) => setSearchArea(event.target.value)}
+                  minLength={2}
+                  maxLength={80}
+                  placeholder="e.g. NW1, Hackney, Manchester"
+                  className="mt-2 w-full bg-transparent font-medium text-white outline-none placeholder:text-slate-600"
+                />
+              </span>
+            </label>
 
+            <button
+              type="submit"
+              disabled={searchStatus === "loading"}
+              className="min-h-[4.75rem] rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-slate-500"
+            >
+              {searchStatus === "loading" ? "Searching..." : targetCategories.length === 0 ? "Show saved map" : "Search live data"}
+            </button>
+
+            <div className="xl:col-span-2">
               <CategorySearchPicker selected={targetCategories} onToggle={toggleTargetCategory} onShowAll={showAllTargetCategories} />
-            </form>
-          </div>
+            </div>
+          </form>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-slate-300">
-              Dataset: {datasetLabel}
-            </span>
-          </div>
           <p
-            className={`mt-3 rounded-2xl border px-4 py-3 text-sm ${
+            className={`mt-3 rounded-2xl border px-4 py-2.5 text-sm ${
               searchStatus === "error"
                 ? "border-rose-400/20 bg-rose-400/10 text-rose-100"
                 : searchStatus === "success"
@@ -390,13 +427,34 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
           </p>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[340px_minmax(760px,1fr)_460px] 2xl:grid-cols-[360px_minmax(900px,1fr)_500px]">
-          <aside className="space-y-4 xl:sticky xl:top-5 xl:self-start">
+        <section className="dashboard-workspace-grid">
+          <aside className="order-2 space-y-4 xl:order-none xl:sticky xl:top-5 xl:self-start">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-200">
                 <Filter className="h-4 w-4 text-indigo-300" /> Filters
               </div>
               <div className="mt-4 space-y-3">
+                <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-400">
+                  <Search className="h-4 w-4 shrink-0 text-slate-500" />
+                  <input
+                    value={prospectQuery}
+                    onChange={(event) => setProspectQuery(event.target.value)}
+                    maxLength={80}
+                    aria-label="Search visible prospects"
+                    placeholder="Search name, area, address, vertical"
+                    className="w-full bg-transparent font-medium text-slate-100 outline-none placeholder:text-slate-600"
+                  />
+                  {prospectQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setProspectQuery("")}
+                      aria-label="Clear prospect search"
+                      className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-slate-500 transition hover:bg-white/[0.06] hover:text-white"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </label>
                 <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-400">
                   <Search className="h-4 w-4 text-slate-500" />
                   <select
@@ -432,59 +490,84 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                     className="mt-3 w-full accent-indigo-400"
                   />
                 </label>
+                {hasActiveProspectFilters && (
+                  <button
+                    type="button"
+                    onClick={resetProspectFilters}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
+                  >
+                    <X className="h-3.5 w-3.5" /> Clear filters
+                  </button>
+                )}
               </div>
             </div>
 
             <ProspectList
               businesses={sortedVisibleBusinesses}
-              selectedBusinessId={selectedBusiness.id}
+              totalCount={businesses.length}
+              selectedBusinessId={selectedBusinessIdForUi}
               onSelectBusiness={selectBusiness}
+              onClearFilters={resetProspectFilters}
+              hasActiveFilters={hasActiveProspectFilters}
             />
 
             <PreviouslyViewed
               prospects={viewedProspects}
               businesses={businesses}
-              selectedBusinessId={selectedBusiness.id}
+              selectedBusinessId={selectedBusinessIdForUi}
               onSelectBusiness={selectBusiness}
             />
           </aside>
 
-          <ProspectMap
-            businesses={mapBusinesses}
-            selectedBusinessId={selectedBusiness.id}
-            onSelectBusiness={selectBusiness}
-            ticketStatusByBusinessId={ticketStatusByBusinessId}
-            controls={{
-              categoryFilter,
-              onCategoryFilter: setCategoryFilter,
-              minimumScore,
-              onMinimumScore: setMinimumScore,
-              searchArea,
-              onSearchArea: setSearchArea,
-              targetCategories,
-              onToggleCategory: toggleTargetCategory,
-              onSearch: runSearch,
-              searchStatus,
-              searchMessage,
-              visibleCount: mapBusinesses.length,
-            }}
-          />
+          <div className="order-1 min-w-0 xl:order-none">
+            <ProspectMap
+              businesses={mapBusinesses}
+              selectedBusinessId={selectedBusinessIdForUi}
+              onSelectBusiness={selectBusiness}
+              ticketStatusByBusinessId={ticketStatusByBusinessId}
+              controls={{
+                categoryFilter,
+                onCategoryFilter: setCategoryFilter,
+                prospectQuery,
+                onProspectQuery: setProspectQuery,
+                onClearFilters: resetProspectFilters,
+                hasActiveFilters: hasActiveProspectFilters,
+                minimumScore,
+                onMinimumScore: setMinimumScore,
+                searchArea,
+                onSearchArea: setSearchArea,
+                targetCategories,
+                onToggleCategory: toggleTargetCategory,
+                onShowAllCategories: showAllTargetCategories,
+                onSearch: runSearch,
+                searchStatus,
+                searchMessage,
+                visibleCount: mapBusinesses.length,
+                totalCount: businesses.length,
+              }}
+            />
+          </div>
 
-          <div className="space-y-6 xl:sticky xl:top-5 xl:self-start">
+          <div className="order-3 space-y-6 xl:order-none xl:sticky xl:top-5 xl:self-start">
             <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-4 shadow-2xl shadow-black/20 backdrop-blur-xl">
               <button
                 type="button"
                 onClick={() => setFocusSelectedOnly((current) => !current)}
                 aria-pressed={focusSelectedOnly}
+                disabled={!selectedBusiness}
                 className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition ${
                   focusSelectedOnly
                     ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-100"
                     : "border-white/10 bg-black/20 text-slate-300 hover:bg-white/[0.06]"
-                }`}
+                } disabled:opacity-55`}
               >
                 <span className="flex items-center gap-2">
                   {focusSelectedOnly ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  {focusSelectedOnly ? "Focused on selected business" : "Show only selected on map"}
+                  {!selectedBusiness
+                    ? "No selected prospect visible"
+                    : focusSelectedOnly
+                      ? "Focused on selected business"
+                      : "Show only selected on map"}
                 </span>
                 <span className="text-xs font-medium text-slate-500">{focusSelectedOnly ? "On" : "Off"}</span>
               </button>
@@ -492,13 +575,17 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                 Useful after opening a ticket: hide the rest of the territory and keep the map centred on one business.
               </p>
             </div>
-            <BusinessDetailPanel
-              business={selectedBusiness}
-              onOpenTicket={openTicket}
-              onReject={rejectBusiness}
-              hasOpenTicket={hasOpenTicket}
-              canUseDeepResearch={isAdmin}
-            />
+            {selectedBusiness ? (
+              <BusinessDetailPanel
+                business={selectedBusiness}
+                onOpenTicket={openTicket}
+                onReject={rejectBusiness}
+                hasOpenTicket={hasOpenTicket}
+                canUseDeepResearch={isAdmin}
+              />
+            ) : (
+              <NoMatchingProspectPanel onClearFilters={resetProspectFilters} />
+            )}
             <ReviewPipelineSummary metrics={ticketMetrics} />
           </div>
         </section>
@@ -545,6 +632,25 @@ function formatViewedDate(date: Date): string {
   }).format(date);
 }
 
+function NoMatchingProspectPanel({ onClearFilters }: { onClearFilters: () => void }) {
+  return (
+    <section className="rounded-[2rem] border border-dashed border-white/10 bg-white/[0.035] p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/70">No selected prospect</p>
+      <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">No businesses match these filters.</h2>
+      <p className="mt-3 text-sm leading-6 text-slate-400">
+        Clear the filters to bring the full territory back, or loosen the search, score, or vertical filter from the left rail.
+      </p>
+      <button
+        type="button"
+        onClick={onClearFilters}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
+      >
+        <X className="h-4 w-4" /> Clear filters
+      </button>
+    </section>
+  );
+}
+
 function ReviewPipelineSummary({ metrics }: { metrics: ReturnType<typeof calculateTicketMetrics> }) {
   return (
     <section className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
@@ -587,10 +693,10 @@ function MiniMetric({ label, value }: { label: string; value: string }) {
 
 function KpiCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-5">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-black tracking-tight text-white">{value}</p>
-      <p className="mt-1 text-xs text-slate-500">{detail}</p>
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-black/20 p-3 sm:p-4">
+      <p className="text-xs leading-4 text-slate-500 sm:text-sm">{label}</p>
+      <p className="mt-1.5 whitespace-nowrap text-xl font-black tracking-tight text-white sm:text-3xl">{value}</p>
+      <p className="mt-1 hidden text-xs text-slate-500 sm:block">{detail}</p>
     </div>
   );
 }
@@ -606,55 +712,54 @@ function CategorySearchPicker({
 }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Business types</span>
         <span className="text-[11px] text-slate-500">
           {selected.length === 0 ? "All saved verticals" : `${selected.length}/${MAX_SEARCH_CATEGORIES} selected`}
         </span>
       </div>
-      <div className="mt-3 max-h-64 space-y-3 overflow-y-auto pb-2 pr-1">
+      <div className="mt-3 space-y-3">
         <button
           type="button"
           onClick={onShowAll}
           aria-pressed={selected.length === 0}
-          className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+          className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition ${
             selected.length === 0
-              ? "border-emerald-300/70 bg-emerald-300/20 text-emerald-50 shadow-sm shadow-emerald-950/30"
+              ? "category-chip-active shadow-sm shadow-emerald-950/30"
               : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
           }`}
         >
           All saved verticals
         </button>
-        <p className="text-[11px] leading-4 text-slate-500">
-          Use all to browse the saved map without spending live search calls. Pick up to {MAX_SEARCH_CATEGORIES} types when you want a fresh Google Places search.
-        </p>
-        {categoryGroups.map((group) => (
-          <div key={group.group}>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">{group.group}</p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              {group.options.map((option) => {
-                const isActive = selected.includes(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => onToggle(option.value)}
-                    aria-pressed={isActive}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      isActive
-                        ? "border-indigo-300/80 bg-indigo-300/25 text-indigo-50 shadow-sm shadow-indigo-950/30"
-                        : selected.length >= MAX_SEARCH_CATEGORIES
-                          ? "border-white/10 bg-black/10 text-slate-600"
-                          : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
+        <div className="grid gap-x-6 gap-y-3 md:grid-cols-2 2xl:grid-cols-3">
+          {categoryGroups.map((group) => (
+            <div key={group.group} className="min-w-0 border-t border-white/10 pt-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">{group.group}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {group.options.map((option) => {
+                  const isActive = selected.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => onToggle(option.value)}
+                      aria-pressed={isActive}
+                      className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition ${
+                        isActive
+                          ? "category-chip-active shadow-sm shadow-indigo-950/30"
+                          : selected.length >= MAX_SEARCH_CATEGORIES
+                            ? "border-white/10 bg-black/10 text-slate-600"
+                            : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -723,19 +828,44 @@ function PreviouslyViewed({
 
 function ProspectList({
   businesses,
+  totalCount,
   selectedBusinessId,
   onSelectBusiness,
+  onClearFilters,
+  hasActiveFilters,
 }: {
   businesses: Business[];
+  totalCount: number;
   selectedBusinessId: string;
   onSelectBusiness: (business: Business) => void;
+  onClearFilters: () => void;
+  hasActiveFilters: boolean;
 }) {
   return (
     <section className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
       <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-indigo-200/70">Ranked shortlist</p>
-      <h2 className="mt-2 text-lg font-semibold text-white">Visible prospects</h2>
+      <div className="mt-2 flex items-start justify-between gap-3">
+        <h2 className="text-lg font-semibold text-white">Visible prospects</h2>
+        <span className="rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-xs font-semibold text-slate-400">
+          {businesses.length}/{totalCount}
+        </span>
+      </div>
       <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto pr-1">
-        {businesses.map((business, index) => {
+        {businesses.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 p-4 text-sm leading-6 text-slate-500">
+            No prospects match the current filters.
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={onClearFilters}
+                className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.06] hover:text-white"
+              >
+                <X className="h-3.5 w-3.5" /> Clear filters
+              </button>
+            )}
+          </div>
+        ) : (
+          businesses.map((business, index) => {
           const isSelected = business.id === selectedBusinessId;
 
           return (
@@ -763,7 +893,8 @@ function ProspectList({
               </div>
             </button>
           );
-        })}
+          })
+        )}
       </div>
     </section>
   );
