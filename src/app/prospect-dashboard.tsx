@@ -7,7 +7,12 @@ import { ArrowUpRight, BarChart3, Eye, EyeOff, Filter, History, MapPin, Search, 
 import { BusinessDetailPanel } from "@/components/business-detail-panel";
 import { ProspectMap } from "@/components/prospect-map";
 import { ThemeToggle } from "@/components/theme-provider";
-import { CATEGORY_META, getCategoryOptionGroups } from "@/lib/categories";
+import {
+  CATEGORY_META,
+  MAX_LIVE_SEARCH_CATEGORIES,
+  getCategoryOptionGroups,
+  isCategorySelectionDisabled,
+} from "@/lib/categories";
 import {
   filterProspects,
   hasActiveProspectFilters as hasActiveProspectFilterState,
@@ -19,8 +24,6 @@ import { calculateTicketMetrics } from "@/lib/tickets";
 import type { Business, BusinessCategory, Ticket } from "@/lib/types";
 
 const categoryGroups = getCategoryOptionGroups();
-const MAX_SEARCH_CATEGORIES = 6;
-
 const VIEWED_PROSPECTS_STORAGE_KEY = "voice-ai-prospect-map:viewed-prospects";
 
 type ViewedProspect = Pick<Business, "id" | "name" | "category" | "borough" | "voiceAiScore"> & {
@@ -129,7 +132,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     setTargetCategories((current) => {
       const next = current.includes(category)
         ? current.filter((value) => value !== category)
-        : current.length >= MAX_SEARCH_CATEGORIES
+        : isCategorySelectionDisabled(current, category)
           ? current
           : [...current, category];
       if (next.length) {
@@ -380,7 +383,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                 {datasetLabel}
               </span>
               <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-[11px] font-semibold text-slate-300">
-                {targetCategories.length === 0 ? "Saved map" : `${targetCategories.length}/${MAX_SEARCH_CATEGORIES} selected`}
+                {targetCategories.length === 0 ? "Saved map" : `${targetCategories.length}/${MAX_LIVE_SEARCH_CATEGORIES} selected`}
               </span>
             </div>
           </div>
@@ -715,7 +718,7 @@ function CategorySearchPicker({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Business types</span>
         <span className="text-[11px] text-slate-500">
-          {selected.length === 0 ? "All saved verticals" : `${selected.length}/${MAX_SEARCH_CATEGORIES} selected`}
+          {selected.length === 0 ? "All saved verticals" : `${selected.length}/${MAX_LIVE_SEARCH_CATEGORIES} selected`}
         </span>
       </div>
       <div className="mt-3 space-y-3">
@@ -738,17 +741,20 @@ function CategorySearchPicker({
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {group.options.map((option) => {
                   const isActive = selected.includes(option.value);
+                  const disabled = isCategorySelectionDisabled(selected, option.value);
                   return (
                     <button
                       key={option.value}
                       type="button"
                       onClick={() => onToggle(option.value)}
                       aria-pressed={isActive}
+                      aria-label={disabled ? `${option.label} unavailable. Clear a selected business type first.` : option.label}
+                      disabled={disabled}
                       className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition ${
                         isActive
                           ? "category-chip-active shadow-sm shadow-indigo-950/30"
-                          : selected.length >= MAX_SEARCH_CATEGORIES
-                            ? "border-white/10 bg-black/10 text-slate-600"
+                          : disabled
+                            ? "cursor-not-allowed border-white/10 bg-black/10 text-slate-600"
                             : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
                       }`}
                     >

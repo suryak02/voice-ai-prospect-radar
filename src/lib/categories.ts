@@ -508,6 +508,20 @@ export const CATEGORY_META: Record<BusinessCategory, CategoryMeta> = {
 /** Every category value, in display order. */
 export const CATEGORY_VALUES = Object.keys(CATEGORY_META) as BusinessCategory[];
 
+/** Maximum business types allowed in one rate-limited live Places search. */
+export const MAX_LIVE_SEARCH_CATEGORIES = 6;
+
+/**
+ * Once the live-search cap is reached, unselected options are unavailable while
+ * selected options remain interactive so people can swap categories.
+ */
+export function isCategorySelectionDisabled(
+  selectedCategories: readonly BusinessCategory[],
+  category: BusinessCategory,
+): boolean {
+  return selectedCategories.length >= MAX_LIVE_SEARCH_CATEGORIES && !selectedCategories.includes(category);
+}
+
 /** Tuple form for `z.enum(...)` (validates membership at the API boundary). */
 export const CATEGORY_ENUM_VALUES = CATEGORY_VALUES as [BusinessCategory, ...BusinessCategory[]];
 

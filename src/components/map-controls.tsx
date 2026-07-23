@@ -2,12 +2,10 @@
 
 import type { FormEvent } from "react";
 import { Filter, Search, X } from "lucide-react";
-import { getCategoryOptionGroups } from "@/lib/categories";
+import { MAX_LIVE_SEARCH_CATEGORIES, getCategoryOptionGroups, isCategorySelectionDisabled } from "@/lib/categories";
 import type { BusinessCategory } from "@/lib/types";
 
 const categoryGroups = getCategoryOptionGroups();
-const MAX_SEARCH_CATEGORIES = 6;
-
 export type MapControlsProps = {
   categoryFilter: BusinessCategory | "all";
   onCategoryFilter: (value: BusinessCategory | "all") => void;
@@ -153,7 +151,7 @@ export function MapControls({
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Business types</span>
             <span className="text-[11px] text-slate-500">
-              {targetCategories.length}/{MAX_SEARCH_CATEGORIES}
+              {targetCategories.length}/{MAX_LIVE_SEARCH_CATEGORIES}
             </span>
           </div>
           <div className="mt-3 space-y-3">
@@ -175,17 +173,20 @@ export function MapControls({
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {group.options.map((option) => {
                     const active = targetCategories.includes(option.value);
+                    const disabled = isCategorySelectionDisabled(targetCategories, option.value);
                     return (
                       <button
                         key={option.value}
                         type="button"
                         onClick={() => onToggleCategory(option.value)}
                         aria-pressed={active}
+                        aria-label={disabled ? `${option.label} unavailable. Clear a selected business type first.` : option.label}
+                        disabled={disabled}
                         className={`whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition ${
                           active
                             ? "category-chip-active"
-                            : targetCategories.length >= MAX_SEARCH_CATEGORIES
-                              ? "border-white/10 bg-black/10 text-slate-600"
+                            : disabled
+                              ? "cursor-not-allowed border-white/10 bg-black/10 text-slate-600"
                               : "border-white/10 bg-black/20 text-slate-400 hover:bg-white/[0.06]"
                         }`}
                       >
