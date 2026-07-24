@@ -388,7 +388,11 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
             </div>
           </div>
 
-          <form onSubmit={runPersonalizedSearch} className="mt-3 grid gap-3 xl:grid-cols-[minmax(260px,1fr)_auto] xl:items-start">
+          <form
+            onSubmit={runPersonalizedSearch}
+            aria-busy={searchStatus === "loading"}
+            className="mt-3 grid gap-3 xl:grid-cols-[minmax(260px,1fr)_auto] xl:items-start"
+          >
             <label className="flex min-h-[4.75rem] items-center gap-3 rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-sm text-slate-400">
               <MapPin className="h-5 w-5 shrink-0 text-indigo-300" />
               <span className="min-w-0 flex-1">
@@ -407,6 +411,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
             <button
               type="submit"
               disabled={searchStatus === "loading"}
+              aria-busy={searchStatus === "loading"}
               className="min-h-[4.75rem] rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-slate-500"
             >
               {searchStatus === "loading" ? "Searching..." : targetCategories.length === 0 ? "Show saved map" : "Search live data"}
@@ -418,6 +423,9 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
           </form>
 
           <p
+            role={searchStatus === "error" ? "alert" : "status"}
+            aria-live={searchStatus === "error" ? "assertive" : "polite"}
+            aria-atomic="true"
             className={`mt-3 rounded-2xl border px-4 py-2.5 text-sm ${
               searchStatus === "error"
                 ? "border-rose-400/20 bg-rose-400/10 text-rose-100"

@@ -134,7 +134,7 @@ export function MapControls({
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} aria-busy={searchStatus === "loading"} className="space-y-3">
         <div className="text-sm font-semibold text-slate-200">Live search</div>
         <label className="block rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-slate-400">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Area</span>
@@ -202,11 +202,15 @@ export function MapControls({
         <button
           type="submit"
           disabled={searchStatus === "loading"}
+          aria-busy={searchStatus === "loading"}
           className="w-full rounded-2xl bg-white px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:bg-white/20 disabled:text-slate-500"
         >
           {searchStatus === "loading" ? "Searching..." : targetCategories.length === 0 ? "Show saved map" : "Search live data"}
         </button>
         <p
+          role={searchStatus === "error" ? "alert" : "status"}
+          aria-live={searchStatus === "error" ? "assertive" : "polite"}
+          aria-atomic="true"
           className={`rounded-2xl border px-3 py-2 text-xs leading-5 ${
             searchStatus === "error"
               ? "border-rose-400/20 bg-rose-400/10 text-rose-100"
