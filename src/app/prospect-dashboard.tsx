@@ -342,7 +342,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                 Public signals create the shortlist; people make the final call.
               </p>
             </div>
-            <div className="flex w-fit items-center gap-3">
+            <div className="flex w-full max-w-full flex-wrap items-center gap-3 sm:w-fit lg:justify-end">
               <ThemeToggle />
               <Link
                 href="/tickets"
