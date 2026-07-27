@@ -93,6 +93,7 @@ export function MapControls({
           <select
             value={categoryFilter}
             onChange={(event) => onCategoryFilter(event.target.value as BusinessCategory | "all")}
+            aria-label="Filter prospects by business type"
             className="w-full bg-transparent font-medium text-slate-100 outline-none"
           >
             <option value="all" className="bg-slate-950 text-white">
