@@ -497,6 +497,8 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                     type="range"
                     min="0"
                     max="9"
+                    step="1"
+                    aria-valuetext={`${minimumScore} out of 9`}
                     value={minimumScore}
                     onChange={(event) => setMinimumScore(Number(event.target.value))}
                     className="mt-3 w-full accent-indigo-400"
