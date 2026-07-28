@@ -142,7 +142,14 @@ export function ProspectMap({ businesses, selectedBusinessId, onSelectBusiness, 
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsExpanded(false);
+    }
+
+    window.addEventListener("keydown", closeOnEscape, true);
+
     return () => {
+      window.removeEventListener("keydown", closeOnEscape, true);
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
@@ -160,7 +167,12 @@ export function ProspectMap({ businesses, selectedBusinessId, onSelectBusiness, 
       />
 
       {isExpanded && (
-        <div className="map-expanded-shell fixed inset-0 z-[3000] flex h-[100dvh] min-h-0 gap-3 overflow-hidden p-0 backdrop-blur-xl sm:gap-4 sm:p-6">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded prospect map"
+          className="map-expanded-shell fixed inset-0 z-[3000] flex h-[100dvh] min-h-0 gap-3 overflow-hidden p-0 backdrop-blur-xl sm:gap-4 sm:p-6"
+        >
           {controls && (
             <div className="hidden h-full min-h-0 w-[340px] shrink-0 overflow-hidden lg:block">
               <MapControls {...controls} />
