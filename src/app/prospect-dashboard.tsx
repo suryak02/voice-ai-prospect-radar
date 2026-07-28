@@ -818,6 +818,7 @@ function PreviouslyViewed({
                 key={prospect.id}
                 type="button"
                 onClick={() => matchingBusiness && onSelectBusiness(matchingBusiness)}
+                aria-current={isSelected ? "true" : undefined}
                 disabled={!matchingBusiness}
                 className={`w-full rounded-2xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   isSelected ? "border-indigo-300/40 bg-indigo-300/10" : "border-white/10 bg-black/20 hover:bg-white/[0.06]"
@@ -890,6 +891,7 @@ function ProspectList({
               key={business.id}
               type="button"
               onClick={() => onSelectBusiness(business)}
+              aria-current={isSelected ? "true" : undefined}
               className={`w-full rounded-2xl border p-3 text-left transition ${
                 isSelected
                   ? "border-indigo-300/40 bg-indigo-300/10"

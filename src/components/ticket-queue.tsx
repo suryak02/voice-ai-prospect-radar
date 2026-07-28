@@ -58,6 +58,7 @@ export function TicketQueue({ tickets, businesses, selectedBusinessId, onSelectT
                 key={ticket.id}
                 type="button"
                 onClick={() => onSelectTicket(ticket)}
+                aria-current={isSelected ? "true" : undefined}
                 disabled={!matchingBusiness}
                 className={`w-full rounded-2xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   isSelected
