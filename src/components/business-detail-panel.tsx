@@ -196,6 +196,7 @@ export function BusinessDetailPanel({
                   type="button"
                   onClick={() => setDepthMode(mode)}
                   disabled={enrichStatus === "loading"}
+                  aria-pressed={depthMode === mode}
                   className={`rounded-full px-3 py-1 font-medium transition disabled:opacity-50 ${
                     depthMode === mode ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"
                   }`}
@@ -266,7 +267,16 @@ export function BusinessDetailPanel({
           </div>
         )}
 
-        {enrichStatus === "error" && <p className="mt-2 text-xs text-rose-300">{enrichError}</p>}
+        {enrichStatus === "loading" && (
+          <p role="status" aria-live="polite" aria-atomic="true" className="mt-2 text-xs text-indigo-100">
+            {depthMode === "deep" ? "Deep research is running." : "AI analysis is running."}
+          </p>
+        )}
+        {enrichStatus === "error" && (
+          <p role="alert" className="mt-2 text-xs text-rose-300">
+            {enrichError}
+          </p>
+        )}
       </div>
 
       <div className="mt-6 space-y-3">
