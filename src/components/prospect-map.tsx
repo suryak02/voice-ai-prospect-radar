@@ -217,6 +217,7 @@ function MapCanvas({
   const renderedBusinessKey = useMemo(() => renderedBusinesses.map((business) => business.id).join("|"), [renderedBusinesses]);
 
   const regionLabel = useMemo(() => buildRegionLabel(businesses), [businesses]);
+  const mapSummary = `${isExpanded ? "Expanded" : "Embedded"} prospect map showing ${renderedBusinesses.length} of ${businesses.length} prospects around ${regionLabel}. Keyboard users can use the ranked shortlist to select prospects.`;
 
   useEffect(() => {
     if (!mapElementRef.current || mapRef.current) return;
@@ -360,7 +361,7 @@ function MapCanvas({
           : "min-h-[460px] rounded-[2rem] sm:min-h-[560px] lg:min-h-[640px] xl:sticky xl:top-5 xl:self-start xl:h-[calc(100vh-2.5rem)] xl:min-h-[600px]"
       }`}
     >
-      <div ref={mapElementRef} className="absolute inset-0 h-full w-full" aria-label="Prospect map" />
+      <div ref={mapElementRef} role="region" className="absolute inset-0 h-full w-full" aria-label={mapSummary} />
       {mapError && (
         <div className="absolute inset-0 grid place-items-center bg-slate-950/80 p-8 text-center text-sm text-slate-300">
           {mapError}
