@@ -209,6 +209,7 @@ function MapCanvas({
   const tileLayerRef = useRef<TileLayer | null>(null);
   const markerLayerRef = useRef<LayerGroup | null>(null);
   const markerRef = useRef<Map<string, CircleMarker>>(new Map());
+  const mapActionButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastFitKeyRef = useRef("");
   const [mapReadyTick, setMapReadyTick] = useState(0);
   const [mapError, setMapError] = useState("");
@@ -353,6 +354,11 @@ function MapCanvas({
     window.setTimeout(() => mapRef.current?.invalidateSize(), 0);
   }, [isExpanded]);
 
+  useEffect(() => {
+    if (!isExpanded) return;
+    window.setTimeout(() => mapActionButtonRef.current?.focus({ preventScroll: true }), 0);
+  }, [isExpanded]);
+
   return (
     <section
       className={`map-canvas-shell relative overflow-hidden border shadow-2xl shadow-black/30 ${
@@ -381,8 +387,10 @@ function MapCanvas({
         </div>
 
         <button
+          ref={mapActionButtonRef}
           type="button"
           onClick={onExpand}
+          aria-label={isExpanded ? "Close expanded prospect map" : "Expand prospect map"}
           className="map-action-button inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold shadow-2xl backdrop-blur-xl transition hover:bg-white/[0.12] sm:px-4 sm:text-sm"
         >
           {isExpanded ? <X className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
