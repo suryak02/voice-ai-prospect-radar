@@ -105,6 +105,14 @@ export function BusinessDetailPanel({
         aiEnrichedAt: enrichment.enrichedAt,
       }
     : business;
+  const copyStatusMessage =
+    copyStatus === "copying"
+      ? "Copying sandbox brief."
+      : copyStatus === "copied"
+        ? "Sandbox brief copied to clipboard."
+        : copyStatus === "error"
+          ? "Sandbox brief could not be copied."
+          : "";
 
   async function generateAiAnalysis(mode: ResearchDepth) {
     setEnrichStatus("loading");
@@ -368,6 +376,11 @@ export function BusinessDetailPanel({
                 ? "Copy failed"
                 : "Copy sandbox brief"}
         </button>
+        {copyStatusMessage && (
+          <span role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+            {copyStatusMessage}
+          </span>
+        )}
       </div>
 
       <div className="mt-6 space-y-2 border-t border-white/10 pt-5 text-xs text-slate-400">
