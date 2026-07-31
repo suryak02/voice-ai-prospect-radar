@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, ExternalLink, GripVertical, MapPin, Phone, RotateCcw, Sparkles, Star, Trophy, X, XCircle } from "lucide-react";
-import { calculateTicketMetrics, TICKET_COLUMNS, TICKET_STATUS_VALUES, ticketStatusLabel, type TicketPipelineStatus } from "@/lib/tickets";
+import { calculateTicketMetrics, TICKET_COLUMNS, TICKET_STATUS_VALUES, ticketStatusDisplayLabel, type TicketPipelineStatus } from "@/lib/tickets";
 import type { Business, Ticket } from "@/lib/types";
 
 const columnStyles: Record<TicketPipelineStatus, string> = {
@@ -526,7 +526,7 @@ function TicketCard({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPills[ticket.status]}`}>{ticket.status}</span>
+        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${statusPills[ticket.status]}`}>{ticketStatusDisplayLabel(ticket.status)}</span>
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
@@ -600,7 +600,7 @@ function BusinessContextDialog({ business, ticket, onClose }: { business: Busine
         <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
           <span className="rounded-full border border-sky-300/20 bg-sky-300/10 px-3 py-1.5 text-sky-100">{formatBusinessCategory(business.category)}</span>
           <span className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-slate-300">{business.borough}</span>
-          {ticket && <span className={`rounded-full border px-3 py-1.5 ${statusPills[ticket.status]}`}>{ticketStatusLabel(ticket.status)}</span>}
+          {ticket && <span className={`rounded-full border px-3 py-1.5 ${statusPills[ticket.status]}`}>{ticketStatusDisplayLabel(ticket.status)}</span>}
           <span className="rounded-full bg-white px-3 py-1.5 text-slate-950">{business.voiceAiScore}/9 fit</span>
         </div>
 
@@ -718,8 +718,8 @@ function ConfirmationDialog({
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-400">
               Confirm moving <span className="font-semibold text-slate-100">{change.ticket.businessName}</span> from{" "}
-              <span className="font-semibold text-slate-100">{ticketStatusLabel(change.ticket.status)}</span> to{" "}
-              <span className="font-semibold text-slate-100">{ticketStatusLabel(change.status)}</span>.
+              <span className="font-semibold text-slate-100">{ticketStatusDisplayLabel(change.ticket.status)}</span> to{" "}
+              <span className="font-semibold text-slate-100">{ticketStatusDisplayLabel(change.status)}</span>.
             </p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateTicketMetrics, normalizeTicketStatus, TICKET_COLUMNS } from "./tickets";
+import { calculateTicketMetrics, normalizeTicketStatus, ticketStatusDisplayLabel, TICKET_COLUMNS } from "./tickets";
 import type { Ticket } from "./types";
 
 function ticket(status: Ticket["status"], score = 7): Ticket {
@@ -22,6 +22,13 @@ describe("ticket pipeline helpers", () => {
     expect(normalizeTicketStatus("reviewed")).toBe("contacted");
     expect(normalizeTicketStatus("rejected")).toBe("lost");
     expect(normalizeTicketStatus("open")).toBe("open");
+  });
+
+  it("returns concise labels for ticket cards and confirmations", () => {
+    expect(ticketStatusDisplayLabel("open")).toBe("Open");
+    expect(ticketStatusDisplayLabel("contacted")).toBe("Contacted");
+    expect(ticketStatusDisplayLabel("won")).toBe("Won");
+    expect(ticketStatusDisplayLabel("rejected")).toBe("Not fit / lost");
   });
 
   it("calculates pipeline counts and win rate", () => {

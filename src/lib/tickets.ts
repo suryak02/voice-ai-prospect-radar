@@ -37,6 +37,13 @@ export const TICKET_COLUMNS: TicketColumn[] = [
   },
 ];
 
+const TICKET_STATUS_DISPLAY_LABELS: Record<TicketPipelineStatus, string> = {
+  open: "Open",
+  contacted: "Contacted",
+  won: "Won",
+  lost: "Not fit / lost",
+};
+
 export function normalizeTicketStatus(status: string): TicketPipelineStatus {
   if (status === "reviewed") return "contacted";
   if (status === "rejected") return "lost";
@@ -85,7 +92,6 @@ export function calculateTicketMetrics(tickets: Ticket[]): TicketMetrics {
   };
 }
 
-export function ticketStatusLabel(status: string): string {
-  const normalized = normalizeTicketStatus(status);
-  return TICKET_COLUMNS.find((column) => column.status === normalized)?.label ?? "Open tickets";
+export function ticketStatusDisplayLabel(status: string): string {
+  return TICKET_STATUS_DISPLAY_LABELS[normalizeTicketStatus(status)];
 }
