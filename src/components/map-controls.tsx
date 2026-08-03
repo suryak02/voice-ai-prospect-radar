@@ -154,7 +154,9 @@ export function MapControls({
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Business types</span>
             <span className="text-[11px] text-slate-500">
-              {targetCategories.length}/{MAX_LIVE_SEARCH_CATEGORIES}
+              {targetCategories.length === 0
+                ? "All saved verticals"
+                : `${targetCategories.length}/${MAX_LIVE_SEARCH_CATEGORIES} selected`}
             </span>
           </div>
           <div className="mt-3 space-y-3">
