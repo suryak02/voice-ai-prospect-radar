@@ -11,6 +11,7 @@ import {
   CATEGORY_META,
   MAX_LIVE_SEARCH_CATEGORIES,
   getCategoryOptionGroups,
+  getCategoryLabel,
   isCategorySelectionDisabled,
 } from "@/lib/categories";
 import {
@@ -828,7 +829,7 @@ function PreviouslyViewed({
                   <div>
                     <p className="text-sm font-semibold text-white">{prospect.name}</p>
                     <p className="mt-1 text-xs capitalize text-slate-500">
-                      {prospect.category} · {prospect.borough} · {prospect.viewedAt}
+                      {getCategoryLabel(prospect.category)} · {prospect.borough} · {prospect.viewedAt}
                     </p>
                   </div>
                   <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-black ${getScorePillClasses(prospect.voiceAiScore)}`}>
@@ -903,7 +904,7 @@ function ProspectList({
                   <p className="text-xs font-medium text-slate-500">#{index + 1}</p>
                   <p className="mt-1 text-sm font-semibold text-white">{business.name}</p>
                   <p className="mt-1 text-xs capitalize text-slate-500">
-                    {business.category} · {business.borough}
+                    {getCategoryLabel(business.category)} · {business.borough}
                   </p>
                 </div>
                 <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-black ${getScorePillClasses(business.voiceAiScore)}`}>

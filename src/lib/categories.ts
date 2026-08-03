@@ -550,6 +550,11 @@ export function categorySearchTerm(category: BusinessCategory): string {
   return CATEGORY_META[category].searchTerm;
 }
 
+/** Human-readable label for UI badges, filters, and map popups. */
+export function getCategoryLabel(category: BusinessCategory): string {
+  return CATEGORY_META[category].label;
+}
+
 /**
  * Classify a Google place from its `types` + name + (optional) query text.
  * Uses a longest-keyword-wins heuristic so specific categories (e.g. "med spa")

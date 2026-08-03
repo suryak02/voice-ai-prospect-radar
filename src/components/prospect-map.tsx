@@ -5,6 +5,7 @@ import { Maximize2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MapControls, type MapControlsProps } from "@/components/map-controls";
 import { useTheme } from "@/components/theme-provider";
+import { getCategoryLabel } from "@/lib/categories";
 import { getScoreLabel } from "@/lib/scoring";
 import type { Business, Ticket } from "@/lib/types";
 
@@ -85,7 +86,7 @@ function popupHtml(business: Business, ticketStatus?: Ticket["status"]): string 
       <p>${escapeHtml(business.address)}</p>
       <dl>
         <div><dt>Fit</dt><dd>${escapeHtml(statusLabel)}</dd></div>
-        <div><dt>Vertical</dt><dd>${escapeHtml(business.category.replace(/_/g, " "))}</dd></div>
+        <div><dt>Vertical</dt><dd>${escapeHtml(getCategoryLabel(business.category))}</dd></div>
         <div><dt>Area</dt><dd>${escapeHtml(business.borough)}</dd></div>
       </dl>
     </div>

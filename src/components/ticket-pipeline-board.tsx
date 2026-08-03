@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, ExternalLink, GripVertical, MapPin, Phone, RotateCcw, Sparkles, Star, Trophy, X, XCircle } from "lucide-react";
+import { getCategoryLabel } from "@/lib/categories";
 import { calculateTicketMetrics, TICKET_COLUMNS, TICKET_STATUS_VALUES, ticketStatusDisplayLabel, type TicketPipelineStatus } from "@/lib/tickets";
 import type { Business, Ticket } from "@/lib/types";
 
@@ -759,10 +760,7 @@ function ConfirmationDialog({
 }
 
 function formatBusinessCategory(category: Business["category"]) {
-  return category
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
+  return getCategoryLabel(category);
 }
 
 function formatReviewText(business: Business) {

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ClipboardCheck, Copy, ExternalLink, Navigation, Phone, ShieldCheck, Sparkles } from "lucide-react";
+import { getCategoryLabel } from "@/lib/categories";
 import { readJsonResponse } from "@/lib/http-json";
 import { buildSpecificReasoning, buildVoiceAiAngle } from "@/lib/prospect-insights";
 import { buildProspectContextFromBusiness } from "@/lib/prospect-context";
@@ -161,7 +162,7 @@ export function BusinessDetailPanel({
 
       <div className="mt-5 flex flex-wrap gap-2 text-xs font-medium">
         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-slate-300">{business.borough}</span>
-        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 capitalize text-slate-300">{business.category}</span>
+        <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-slate-300">{getCategoryLabel(business.category)}</span>
         <span className={`rounded-full border px-3 py-1 ${getScorePillClasses(business.voiceAiScore)}`}>
           {getScoreLabel(business.voiceAiScore)}
         </span>

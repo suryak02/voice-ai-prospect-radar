@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   CATEGORY_META,
+  getCategoryLabel,
   getCategoryOptionGroups,
   inferCategoryFromText,
   isCategorySelectionDisabled,
@@ -35,5 +36,10 @@ describe("category metadata", () => {
     expect(isCategorySelectionDisabled(selected, "hotel")).toBe(true);
     expect(isCategorySelectionDisabled(selected, "dental")).toBe(false);
     expect(isCategorySelectionDisabled(selected.slice(0, -1), "hotel")).toBe(false);
+  });
+
+  it("returns curated display labels for category badges", () => {
+    expect(getCategoryLabel("optometry")).toBe("Opticians / Optometry");
+    expect(getCategoryLabel("auto_repair")).toBe("Auto repair / Garage");
   });
 });
