@@ -19,11 +19,13 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
     business.name,
     business.address,
     business.borough,
+    business.phone,
+    business.website,
     business.category,
     CATEGORY_META[business.category].label,
     business.recommendedUseCase,
     ...business.reviewPainSignals,
-  ].some((value) => value.toLowerCase().includes(normalizedQuery));
+  ].some((value) => value?.toLowerCase().includes(normalizedQuery) ?? false);
 }
 
 export function filterProspects(businesses: Business[], filters: ProspectFilterState) {

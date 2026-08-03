@@ -452,7 +452,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
                     onChange={(event) => setProspectQuery(event.target.value)}
                     maxLength={80}
                     aria-label="Search visible prospects"
-                    placeholder="Search name, area, address, vertical"
+                    placeholder="Search name, area, contact, vertical"
                     className="w-full bg-transparent font-medium text-slate-100 outline-none placeholder:text-slate-600"
                   />
                   {prospectQuery && (

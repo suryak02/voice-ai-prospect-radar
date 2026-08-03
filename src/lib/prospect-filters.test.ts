@@ -71,6 +71,13 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(businesses[1], "manchester")).toBe(false);
   });
 
+  it("matches contact details when reviewers remember a phone number or website", () => {
+    const business = prospect({ phone: "+44 20 7946 0123", website: "https://platinum-dental.example" });
+
+    expect(businessMatchesProspectQuery(business, "7946")).toBe(true);
+    expect(businessMatchesProspectQuery(business, "platinum-dental.example")).toBe(true);
+  });
+
   it("combines text, vertical, and minimum score filters", () => {
     expect(
       filterProspects(businesses, {

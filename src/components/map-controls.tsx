@@ -74,7 +74,7 @@ export function MapControls({
             onChange={(event) => onProspectQuery(event.target.value)}
             maxLength={80}
             aria-label="Search visible prospects"
-            placeholder="Search prospects"
+            placeholder="Search name, area, contact, vertical"
             className="w-full bg-transparent font-medium text-slate-100 outline-none placeholder:text-slate-600"
           />
           {prospectQuery && (
