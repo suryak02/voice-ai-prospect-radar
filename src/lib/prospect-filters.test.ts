@@ -75,6 +75,7 @@ describe("prospect filters", () => {
     const business = prospect({ phone: "+44 20 7946 0123", website: "https://platinum-dental.example" });
 
     expect(businessMatchesProspectQuery(business, "7946")).toBe(true);
+    expect(businessMatchesProspectQuery(business, "02079460123")).toBe(true);
     expect(businessMatchesProspectQuery(business, "platinum-dental.example")).toBe(true);
   });
 

@@ -15,7 +15,7 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
 
-  return [
+  const searchableValues = [
     business.name,
     business.address,
     business.borough,
@@ -25,7 +25,43 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
     CATEGORY_META[business.category].label,
     business.recommendedUseCase,
     ...business.reviewPainSignals,
-  ].some((value) => value?.toLowerCase().includes(normalizedQuery) ?? false);
+  ];
+
+  if (searchableValues.some((value) => value?.toLowerCase().includes(normalizedQuery) ?? false)) {
+    return true;
+  }
+
+  const queryDigits = normalizeDigits(normalizedQuery);
+  if (queryDigits.length < 3) return false;
+
+  const queryVariants = getPhoneNumberVariants(queryDigits);
+
+  return searchableValues.some((value) => {
+    const valueDigits = normalizeDigits(value ?? "");
+    if (valueDigits.length < 3) return false;
+    const valueVariants = getPhoneNumberVariants(valueDigits);
+    return valueVariants.some((valueVariant) =>
+      queryVariants.some((queryVariant) => valueVariant.includes(queryVariant)),
+    );
+  });
+}
+
+function normalizeDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
+function getPhoneNumberVariants(digits: string) {
+  const variants = new Set([digits]);
+
+  if (digits.startsWith("44") && digits.length > 4) {
+    variants.add(`0${digits.slice(2)}`);
+  }
+
+  if (digits.startsWith("0") && digits.length > 4) {
+    variants.add(`44${digits.slice(1)}`);
+  }
+
+  return [...variants];
 }
 
 export function filterProspects(businesses: Business[], filters: ProspectFilterState) {
