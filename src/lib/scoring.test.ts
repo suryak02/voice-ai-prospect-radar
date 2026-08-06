@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateVoiceAiScore,
+  clampScore,
   getScoreColorClasses,
   getScoreLabel,
+  getScorePillClasses,
 } from "./scoring";
 import type { ScoreInput } from "./types";
 
@@ -62,6 +64,12 @@ describe("calculateVoiceAiScore", () => {
 });
 
 describe("score presentation helpers", () => {
+  it("clamps calculated scores to the supported 0-9 range", () => {
+    expect(clampScore(-3)).toBe(0);
+    expect(clampScore(4)).toBe(4);
+    expect(clampScore(12)).toBe(9);
+  });
+
   it("labels scores in human-friendly prospect tiers", () => {
     expect(getScoreLabel(1)).toBe("Poor fit");
     expect(getScoreLabel(4)).toBe("Low priority");
@@ -74,5 +82,11 @@ describe("score presentation helpers", () => {
     expect(getScoreColorClasses(1)).toContain("bg-slate-600");
     expect(getScoreColorClasses(6)).toContain("bg-amber-400");
     expect(getScoreColorClasses(9)).toContain("bg-fuchsia-500");
+  });
+
+  it("returns pill classes for low, promising, and highest-priority score tiers", () => {
+    expect(getScorePillClasses(1)).toContain("border-white/10");
+    expect(getScorePillClasses(6)).toContain("border-amber-300/30");
+    expect(getScorePillClasses(9)).toContain("border-fuchsia-400/30");
   });
 });
