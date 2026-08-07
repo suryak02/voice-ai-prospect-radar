@@ -1,8 +1,8 @@
-# Voice AI Prospect Map — case study
+# Voice AI Prospect Radar — case study
 
 ## Summary
 
-Voice AI Prospect Map is a deployed portfolio MVP for a practical sales-intelligence workflow: helping Voice AI companies find local businesses that are likely to benefit from AI call handling, appointment booking, reminders, and customer-service automation.
+Voice AI Prospect Radar is a deployed portfolio MVP for a practical sales-intelligence workflow: helping Voice AI companies find local businesses that are likely to benefit from AI call handling, appointment booking, reminders, and customer-service automation.
 
 The project combines real business discovery, explainable scoring, geospatial review, and on-demand AI prospect briefs in one workflow.
 
