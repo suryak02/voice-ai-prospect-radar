@@ -1,6 +1,7 @@
 import { getCache, setCache, cleanupMemoryCache } from "@/lib/cache";
 import { CATEGORY_META, categorySearchTerm, inferCategoryFromText } from "@/lib/categories";
 import { getEnvValue } from "@/lib/env";
+import { readJsonResponse } from "@/lib/http-json";
 import { calculateVoiceAiScore } from "@/lib/scoring";
 import { isInUk, UK_BOUNDS } from "@/lib/uk-bounds";
 import type { Business, BusinessCategory, BusinessStatus } from "@/lib/types";
@@ -154,10 +155,7 @@ async function searchPlacesPage(apiKey: string, textQuery: string, pageToken?: s
     }),
   });
 
-  const data = (await response.json()) as SearchResponse;
-  if (!response.ok) {
-    throw new Error(`Google Places failed: ${data.error?.message ?? response.statusText}`);
-  }
+  const data = await readJsonResponse<SearchResponse>(response);
 
   return data;
 }

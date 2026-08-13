@@ -67,13 +67,35 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses).toHaveLength(3);
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
+
+  it("reports failed Google Places responses without aborting other verticals", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(textResponse({ error: { message: "Daily Places quota exceeded." } }, { ok: false, status: 429 }))
+      .mockResolvedValueOnce(jsonResponse({ places: [place("place-6", "Zeta Dental")] }));
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Provider Error Test Town",
+      categories: ["plumber", "dental"],
+    });
+
+    expect(result.businesses).toHaveLength(1);
+    expect(result.errors).toEqual(["plumber: Daily Places quota exceeded."]);
+  });
 });
 
 function jsonResponse(body: unknown): Response {
+  return textResponse(body);
+}
+
+function textResponse(body: unknown, init: { ok?: boolean; status?: number; statusText?: string } = {}): Response {
   return {
-    ok: true,
-    json: async () => body,
-    statusText: "OK",
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    statusText: init.statusText ?? "OK",
+    text: async () => JSON.stringify(body),
   } as Response;
 }
 
