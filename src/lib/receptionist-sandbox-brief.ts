@@ -349,3 +349,16 @@ export function formatConfidenceForSandbox(confidence: ClaimConfidence): string 
   if (confidence === "weak") return "weak signal";
   return "unsupported";
 }
+
+export function summarizeSandboxEvidence(brief: ReceptionistSandboxBrief): string {
+  const evidenceCount = brief.prospectContext.evidence.length;
+  const claimCount = brief.prospectContext.claims.length;
+
+  if (!brief.prospectContext.available) {
+    return "No generated prospect context is attached; use public business fields and scoring only.";
+  }
+
+  return `${claimCount} promotable claim${claimCount === 1 ? "" : "s"} backed by ${evidenceCount} evidence snippet${
+    evidenceCount === 1 ? "" : "s"
+  }.`;
+}

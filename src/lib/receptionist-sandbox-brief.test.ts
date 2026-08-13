@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ReceptionistSandboxBriefSchema,
   buildReceptionistSandboxBrief,
+  summarizeSandboxEvidence,
   type ReceptionistSandboxBrief,
 } from "./receptionist-sandbox-brief";
 import { buildProspectContextFromBusiness } from "./prospect-context";
@@ -109,6 +110,15 @@ describe("buildReceptionistSandboxBrief", () => {
     expect(brief.guardrails.prohibitedClaims.join(" ")).toContain("staff overload");
     expect(brief.guardrails.prohibitedClaims.join(" ")).toContain("lost revenue");
     expect(brief.publicSignals.reviewProxyHypotheses[0]).toContain("not a verified customer complaint");
+  });
+
+  it("summarizes attached claim and evidence context for exports", () => {
+    const brief = briefFor();
+
+    expect(summarizeSandboxEvidence(brief)).toMatch(/promotable claims? backed by \d+ evidence snippets?\./);
+    expect(summarizeSandboxEvidence(buildReceptionistSandboxBrief(prospect()))).toContain(
+      "No generated prospect context is attached",
+    );
   });
 
   it("passes schema validation", () => {
