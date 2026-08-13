@@ -7,12 +7,16 @@ export type ProspectFilterState = {
   minimumScore: number;
 };
 
+export function normalizeProspectSearchQuery(query: string): string {
+  return query.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 export function hasActiveProspectFilters({ query, categoryFilter, minimumScore }: ProspectFilterState) {
-  return query.trim().length > 0 || categoryFilter !== "all" || minimumScore > 0;
+  return normalizeProspectSearchQuery(query).length > 0 || categoryFilter !== "all" || minimumScore > 0;
 }
 
 export function businessMatchesProspectQuery(business: Business, query: string) {
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = normalizeProspectSearchQuery(query);
   if (!normalizedQuery) return true;
 
   const searchableValues = [

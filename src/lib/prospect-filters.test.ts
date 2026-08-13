@@ -3,6 +3,7 @@ import {
   businessMatchesProspectQuery,
   filterProspects,
   hasActiveProspectFilters,
+  normalizeProspectSearchQuery,
   resolveSelectedProspect,
   resolveSelectionAfterFilterReset,
 } from "./prospect-filters";
@@ -62,6 +63,12 @@ describe("prospect filters", () => {
       voiceAiScore: 2,
     }),
   ];
+
+
+  it("normalizes reviewer search queries before matching", () => {
+    expect(normalizeProspectSearchQuery("  Dental   Canary   Wharf  ")).toBe("dental canary wharf");
+    expect(hasActiveProspectFilters({ query: "   ", categoryFilter: "all", minimumScore: 0 })).toBe(false);
+  });
 
   it("matches text across names, places, vertical labels, use cases, and review signals", () => {
     expect(businessMatchesProspectQuery(businesses[1], "clifford")).toBe(true);
