@@ -141,6 +141,21 @@ export function getPromotableClaims(claims: GeneratedClaim[]): GeneratedClaim[] 
   return claims.filter((claim) => isPromotableConfidence(claim.confidence) && claim.evidenceIds.length > 0);
 }
 
+export function getEvidenceById(context: Pick<ProspectContext, "evidence">): Map<string, EvidenceSnippet> {
+  return new Map(context.evidence.map((snippet) => [snippet.id, snippet]));
+}
+
+export function getEvidenceForClaim(
+  context: Pick<ProspectContext, "evidence">,
+  claim: Pick<GeneratedClaim, "evidenceIds">,
+): EvidenceSnippet[] {
+  const evidenceById = getEvidenceById(context);
+  return claim.evidenceIds.flatMap((id) => {
+    const snippet = evidenceById.get(id);
+    return snippet ? [snippet] : [];
+  });
+}
+
 export function formatConfidenceLabel(confidence: ClaimConfidence): string {
   if (confidence === "supported") return "Supported";
   if (confidence === "inferred") return "Inferred";

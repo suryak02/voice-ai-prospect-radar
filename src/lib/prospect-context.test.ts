@@ -4,6 +4,7 @@ import {
   buildProspectContextFromBusiness,
   downgradeUnsupportedClaims,
   formatConfidenceLabel,
+  getEvidenceForClaim,
   getPromotableClaims,
   isPromotableConfidence,
   type GeneratedClaim,
@@ -134,6 +135,14 @@ describe("prospect context claim helpers", () => {
       confidence: "unsupported",
       evidenceIds: [],
     });
+  });
+
+  it("resolves evidence snippets behind a generated claim", () => {
+    const context = buildProspectContextFromBusiness(prospect());
+    const scoreClaim = context.generatedClaims.find((claim) => claim.kind === "score");
+
+    expect(scoreClaim).toBeDefined();
+    expect(getEvidenceForClaim(context, scoreClaim!).map((snippet) => snippet.id)).toEqual(["scoring:score"]);
   });
 
   it("returns only claims with promotable confidence and evidence", () => {
