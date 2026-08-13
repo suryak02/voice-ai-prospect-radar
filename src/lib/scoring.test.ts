@@ -5,6 +5,7 @@ import {
   getScoreColorClasses,
   getScoreLabel,
   getScorePillClasses,
+  getScoreTier,
 } from "./scoring";
 import type { ScoreInput } from "./types";
 
@@ -68,6 +69,14 @@ describe("score presentation helpers", () => {
     expect(clampScore(-3)).toBe(0);
     expect(clampScore(4)).toBe(4);
     expect(clampScore(12)).toBe(9);
+  });
+
+  it("maps scores to stable tier keys for analytics and UI summaries", () => {
+    expect(getScoreTier(1)).toBe("poor_fit");
+    expect(getScoreTier(4)).toBe("low_priority");
+    expect(getScoreTier(6)).toBe("promising");
+    expect(getScoreTier(8)).toBe("strong_candidate");
+    expect(getScoreTier(9)).toBe("highest_priority");
   });
 
   it("labels scores in human-friendly prospect tiers", () => {

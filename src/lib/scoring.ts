@@ -6,6 +6,8 @@ export type ScoreResult = {
   breakdown: ScoreBreakdown;
 };
 
+export type ScoreTier = "poor_fit" | "low_priority" | "promising" | "strong_candidate" | "highest_priority";
+
 export function calculateVoiceAiScore(input: ScoreInput): ScoreResult {
   const fitTier = CATEGORY_META[input.category]?.fitTier ?? "low";
   const categoryFit = fitTier === "high" ? 2 : fitTier === "mid" ? 1 : 0;
@@ -69,12 +71,24 @@ export function clampScore(score: number): number {
   return Math.max(0, Math.min(9, score));
 }
 
+export function getScoreTier(score: number): ScoreTier {
+  if (score >= 9) return "highest_priority";
+  if (score >= 7) return "strong_candidate";
+  if (score >= 5) return "promising";
+  if (score >= 3) return "low_priority";
+  return "poor_fit";
+}
+
 export function getScoreLabel(score: number): string {
-  if (score >= 9) return "Highest priority";
-  if (score >= 7) return "Strong candidate";
-  if (score >= 5) return "Promising";
-  if (score >= 3) return "Low priority";
-  return "Poor fit";
+  const labels: Record<ScoreTier, string> = {
+    poor_fit: "Poor fit",
+    low_priority: "Low priority",
+    promising: "Promising",
+    strong_candidate: "Strong candidate",
+    highest_priority: "Highest priority",
+  };
+
+  return labels[getScoreTier(score)];
 }
 
 export function getScoreColorClasses(score: number): string {
