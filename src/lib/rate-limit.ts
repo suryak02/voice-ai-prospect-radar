@@ -7,7 +7,7 @@ import { getRedis } from "@/lib/redis";
 // in-memory counter that is per-instance — same API, weaker guarantee.
 
 type RateLimitOptions = { key: string; limit: number; windowMs: number };
-type RateLimitResult = { allowed: boolean; remaining: number; resetAt: number };
+export type RateLimitResult = { allowed: boolean; remaining: number; resetAt: number };
 
 // One Upstash limiter per (limit, windowMs), created lazily and cached.
 const limiterCache = new Map<string, Ratelimit>();
@@ -71,4 +71,8 @@ export function cleanupRateLimitBuckets() {
   for (const [key, entry] of Array.from(buckets.entries())) {
     if (entry.resetAt <= now) buckets.delete(key);
   }
+}
+
+export function secondsUntilRateLimitReset(result: Pick<RateLimitResult, "resetAt">): number {
+  return Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000));
 }
