@@ -14,6 +14,7 @@ import {
   getCategoryLabel,
   isCategorySelectionDisabled,
 } from "@/lib/categories";
+import { readJsonResponse } from "@/lib/http-json";
 import {
   filterProspects,
   hasActiveProspectFilters as hasActiveProspectFilterState,
@@ -212,7 +213,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
     try {
       if (targetCategories.length === 0) {
         const response = await fetch("/api/businesses");
-        const data = (await response.json()) as { businesses?: Business[]; error?: string };
+        const data = await readJsonResponse<{ businesses?: Business[]; error?: string }>(response);
         if (!response.ok || !data.businesses?.length) throw new Error(data.error ?? "No saved businesses returned.");
 
         const restoredBusinesses = data.businesses;
@@ -235,7 +236,12 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ area: normalizedSearchArea, categories: targetCategories }),
       });
-      const data = (await response.json()) as { businesses?: Business[]; source?: string; error?: string; limitRemaining?: number };
+      const data = await readJsonResponse<{
+        businesses?: Business[];
+        source?: string;
+        error?: string;
+        limitRemaining?: number;
+      }>(response);
 
       if (!response.ok || !data.businesses?.length) {
         throw new Error(data.error ?? "No businesses returned for this search.");
@@ -622,8 +628,8 @@ async function persistTicket(ticket: Ticket): Promise<Ticket | null> {
       }),
     });
 
-    const data = (await response.json()) as { ticket?: Ticket; error?: string };
-    if (!response.ok || !data.ticket) throw new Error(data.error ?? "Ticket API did not return a saved ticket.");
+    const data = await readJsonResponse<{ ticket?: Ticket; error?: string }>(response);
+    if (!data.ticket) throw new Error("Ticket API did not return a saved ticket.");
     return data.ticket;
   } catch (error) {
     console.error("Failed to persist ticket", error);
