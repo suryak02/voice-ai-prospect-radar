@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateTicketMetrics, normalizeTicketStatus, ticketStatusDisplayLabel, TICKET_COLUMNS } from "./tickets";
+import { calculateTicketMetrics, getTicketColumnForStatus, normalizeTicketStatus, ticketStatusDisplayLabel, TICKET_COLUMNS } from "./tickets";
 import type { Ticket } from "./types";
 
 function ticket(status: Ticket["status"], score = 7): Ticket {
@@ -22,6 +22,12 @@ describe("ticket pipeline helpers", () => {
     expect(normalizeTicketStatus("reviewed")).toBe("contacted");
     expect(normalizeTicketStatus("rejected")).toBe("lost");
     expect(normalizeTicketStatus("open")).toBe("open");
+  });
+
+  it("looks up display metadata after normalizing ticket statuses", () => {
+    expect(getTicketColumnForStatus("reviewed").status).toBe("contacted");
+    expect(getTicketColumnForStatus("rejected").accent).toBe("rose");
+    expect(getTicketColumnForStatus("unknown").status).toBe("open");
   });
 
   it("returns concise labels for ticket cards and confirmations", () => {

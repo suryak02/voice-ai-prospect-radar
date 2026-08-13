@@ -92,6 +92,11 @@ export function calculateTicketMetrics(tickets: Ticket[]): TicketMetrics {
   };
 }
 
+export function getTicketColumnForStatus(status: string): TicketColumn {
+  const normalized = normalizeTicketStatus(status);
+  return TICKET_COLUMNS.find((column) => column.status === normalized) ?? TICKET_COLUMNS[0];
+}
+
 export function ticketStatusDisplayLabel(status: string): string {
   return TICKET_STATUS_DISPLAY_LABELS[normalizeTicketStatus(status)];
 }
