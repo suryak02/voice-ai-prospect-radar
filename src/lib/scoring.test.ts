@@ -6,6 +6,7 @@ import {
   getScoreLabel,
   getScorePillClasses,
   getScoreTier,
+  isPriorityProspectScore,
 } from "./scoring";
 import type { ScoreInput } from "./types";
 
@@ -91,6 +92,13 @@ describe("score presentation helpers", () => {
     expect(getScoreColorClasses(1)).toContain("bg-slate-600");
     expect(getScoreColorClasses(6)).toContain("bg-amber-400");
     expect(getScoreColorClasses(9)).toContain("bg-fuchsia-500");
+  });
+
+
+  it("identifies scores that deserve human review", () => {
+    expect(isPriorityProspectScore(6)).toBe(false);
+    expect(isPriorityProspectScore(7)).toBe(true);
+    expect(isPriorityProspectScore(9)).toBe(true);
   });
 
   it("returns pill classes for low, promising, and highest-priority score tiers", () => {

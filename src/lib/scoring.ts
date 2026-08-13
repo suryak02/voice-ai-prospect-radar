@@ -106,3 +106,7 @@ export function getScorePillClasses(score: number): string {
   if (score >= 3) return "border-sky-400/30 bg-sky-400/10 text-sky-100";
   return "border-white/10 bg-white/[0.04] text-slate-200";
 }
+
+export function isPriorityProspectScore(score: number): boolean {
+  return score >= 7;
+}
