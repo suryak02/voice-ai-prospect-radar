@@ -28,7 +28,12 @@ export async function readJsonResponse<T>(response: Response): Promise<T> {
 }
 
 function getErrorMessage(data: unknown): string | null {
-  if (!data || typeof data !== "object" || !("error" in data)) return null;
-  const error = (data as { error?: unknown }).error;
-  return typeof error === "string" && error.trim() ? error : null;
+  if (!data || typeof data !== "object") return null;
+  const { error, message, detail } = data as { error?: unknown; message?: unknown; detail?: unknown };
+
+  for (const value of [error, message, detail]) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+
+  return null;
 }

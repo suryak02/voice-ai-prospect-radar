@@ -12,6 +12,16 @@ describe("readJsonResponse", () => {
     await expect(readJsonResponse(response)).rejects.toThrow("Database is unavailable.");
   });
 
+
+  it("also surfaces API message and detail fields from failed responses", async () => {
+    await expect(readJsonResponse(Response.json({ message: "Quota exceeded." }, { status: 429 }))).rejects.toThrow(
+      "Quota exceeded.",
+    );
+    await expect(readJsonResponse(Response.json({ detail: "Invalid postcode." }, { status: 400 }))).rejects.toThrow(
+      "Invalid postcode.",
+    );
+  });
+
   it("turns empty failed responses into actionable errors", async () => {
     const response = new Response(null, { status: 500 });
 
