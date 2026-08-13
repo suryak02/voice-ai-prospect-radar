@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getEnvValue } from "./env";
+import { getBooleanEnvValue, getEnvValue } from "./env";
 
 const previous = process.env.TEST_ENV_SANITIZE;
 
@@ -9,6 +9,18 @@ afterEach(() => {
   } else {
     process.env.TEST_ENV_SANITIZE = previous;
   }
+  it("parses common truthy boolean feature flags", () => {
+    process.env.TEST_ENV_SANITIZE = " yes ";
+
+    expect(getBooleanEnvValue("TEST_ENV_SANITIZE")).toBe(true);
+  });
+
+  it("treats missing or non-truthy boolean feature flags as disabled", () => {
+    process.env.TEST_ENV_SANITIZE = "false";
+
+    expect(getBooleanEnvValue("TEST_ENV_SANITIZE")).toBe(false);
+    expect(getBooleanEnvValue("MISSING_TEST_ENV_SANITIZE")).toBe(false);
+  });
 });
 
 describe("getEnvValue", () => {
@@ -22,5 +34,17 @@ describe("getEnvValue", () => {
     process.env.TEST_ENV_SANITIZE = "   ";
 
     expect(getEnvValue("TEST_ENV_SANITIZE")).toBeUndefined();
+  });
+  it("parses common truthy boolean feature flags", () => {
+    process.env.TEST_ENV_SANITIZE = " yes ";
+
+    expect(getBooleanEnvValue("TEST_ENV_SANITIZE")).toBe(true);
+  });
+
+  it("treats missing or non-truthy boolean feature flags as disabled", () => {
+    process.env.TEST_ENV_SANITIZE = "false";
+
+    expect(getBooleanEnvValue("TEST_ENV_SANITIZE")).toBe(false);
+    expect(getBooleanEnvValue("MISSING_TEST_ENV_SANITIZE")).toBe(false);
   });
 });
