@@ -27,4 +27,19 @@ describe("readJsonResponse", () => {
 
     await expect(readJsonResponse(response)).rejects.toThrow("server returned no error body");
   });
+
+  it("turns empty successful responses into actionable errors", async () => {
+    const response = new Response(null, { status: 204 });
+
+    await expect(readJsonResponse(response)).rejects.toThrow("server returned no JSON body");
+  });
+
+  it("distinguishes invalid JSON in failed and successful responses", async () => {
+    await expect(readJsonResponse(new Response("not-json", { status: 502 }))).rejects.toThrow(
+      "server returned invalid JSON",
+    );
+    await expect(readJsonResponse(new Response("not-json", { status: 200 }))).rejects.toThrow(
+      "server returned invalid JSON",
+    );
+  });
 });
