@@ -63,7 +63,7 @@ export function proxy(request: NextRequest) {
 function challenge() {
   return new NextResponse("Authentication required.", {
     status: 401,
-    headers: { "WWW-Authenticate": 'Basic realm="Voice AI Prospect Map"' },
+    headers: { "WWW-Authenticate": 'Basic realm="Voice AI Prospect Radar"' },
   });
 }
 

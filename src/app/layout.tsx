@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Voice AI Prospect Map",
+  title: "Voice AI Prospect Radar",
   description: "Geospatial prospect intelligence dashboard for Voice AI companies.",
 };
 
