@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CATEGORY_ENUM_VALUES } from "@/lib/categories";
 import { getBusinesses, persistBusinesses } from "@/lib/data/businesses";
 import { searchGooglePlacesProspects } from "@/lib/google-places";
-import { checkRateLimit, cleanupRateLimitBuckets } from "@/lib/rate-limit";
+import { checkRateLimit, cleanupRateLimitBuckets, secondsUntilRateLimitReset } from "@/lib/rate-limit";
 import type { BusinessCategory } from "@/lib/types";
 
 const categorySchema = z.enum(CATEGORY_ENUM_VALUES);
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       {
         status: 429,
         headers: {
-          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          "Retry-After": String(secondsUntilRateLimitReset(rateLimit)),
           "X-RateLimit-Remaining": "0",
         },
       },

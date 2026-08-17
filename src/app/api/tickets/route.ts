@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createTicket, getTickets } from "@/lib/data/businesses";
-import { checkRateLimit, cleanupRateLimitBuckets } from "@/lib/rate-limit";
+import { checkRateLimit, cleanupRateLimitBuckets, secondsUntilRateLimitReset } from "@/lib/rate-limit";
 import { TICKET_STATUS_VALUES } from "@/lib/tickets";
 
 const ticketSchema = z.object({
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       {
         status: 429,
         headers: {
-          "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)),
+          "Retry-After": String(secondsUntilRateLimitReset(rateLimit)),
           "X-RateLimit-Remaining": "0",
         },
       },

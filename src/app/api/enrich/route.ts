@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { enrichBusiness, resolveOpenAiModel } from "@/lib/openai-enrich";
 import { getEnvValue } from "@/lib/env";
-import { checkRateLimit, cleanupRateLimitBuckets } from "@/lib/rate-limit";
+import { checkRateLimit, cleanupRateLimitBuckets, secondsUntilRateLimitReset } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ async function handlePost(request: NextRequest) {
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "AI analysis limit reached. Try again later." },
-      { status: 429, headers: { "Retry-After": String(Math.ceil((rateLimit.resetAt - Date.now()) / 1000)) } },
+      { status: 429, headers: { "Retry-After": String(secondsUntilRateLimitReset(rateLimit)) } },
     );
   }
 
