@@ -8,7 +8,14 @@ export type ProspectFilterState = {
 };
 
 export function normalizeProspectSearchQuery(query: string): string {
-  return query.trim().replace(/\s+/g, " ").toLowerCase();
+  return normalizeSearchText(query.trim().replace(/\s+/g, " "));
+}
+
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
 export function hasActiveProspectFilters({ query, categoryFilter, minimumScore }: ProspectFilterState) {
@@ -33,7 +40,7 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
 
   const searchableText = searchableValues
     .filter((value): value is string => Boolean(value))
-    .map((value) => value.toLowerCase());
+    .map(normalizeSearchText);
 
   if (searchableText.some((value) => value.includes(normalizedQuery))) {
     return true;

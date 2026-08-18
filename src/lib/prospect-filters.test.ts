@@ -78,6 +78,16 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(businesses[1], "manchester")).toBe(false);
   });
 
+  it("matches prospect text without requiring accented characters", () => {
+    const business = prospect({
+      name: "Café Santé Clinic",
+      reviewPainSignals: ["déjà vu booking friction"],
+    });
+
+    expect(businessMatchesProspectQuery(business, "cafe sante")).toBe(true);
+    expect(businessMatchesProspectQuery(business, "deja vu")).toBe(true);
+  });
+
   it("matches multi-term queries across different prospect fields", () => {
     expect(businessMatchesProspectQuery(businesses[0], "dental canary")).toBe(true);
     expect(businessMatchesProspectQuery(businesses[1], "legal london urgent")).toBe(true);
