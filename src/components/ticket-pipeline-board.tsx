@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, CircleDot, ExternalLink, GripVertical, MapPin, Phone, RotateCcw, Sparkles, Star, Trophy, X, XCircle } from "lucide-react";
 import { getCategoryLabel } from "@/lib/categories";
+import { readJsonResponse } from "@/lib/http-json";
 import { calculateTicketMetrics, TICKET_COLUMNS, TICKET_STATUS_VALUES, ticketStatusDisplayLabel, type TicketPipelineStatus } from "@/lib/tickets";
 import type { Business, Ticket } from "@/lib/types";
 
@@ -197,8 +198,8 @@ export function TicketPipelineBoard({ initialTickets, initialBusinesses }: Ticke
           status,
         }),
       });
-      const data = (await response.json()) as { ticket?: Ticket; error?: string };
-      if (!response.ok || !data.ticket) throw new Error(data.error ?? "Could not update ticket.");
+      const data = await readJsonResponse<{ ticket?: Ticket; error?: string }>(response);
+      if (!data.ticket) throw new Error(data.error ?? "Could not update ticket.");
 
       if (statusRequestIdsRef.current.get(ticket.id) !== requestId) return;
       setTickets((current) => current.map((currentTicket) => (currentTicket.id === ticket.id ? data.ticket! : currentTicket)));
