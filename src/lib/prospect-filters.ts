@@ -31,7 +31,19 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
     ...business.reviewPainSignals,
   ];
 
-  if (searchableValues.some((value) => value?.toLowerCase().includes(normalizedQuery) ?? false)) {
+  const searchableText = searchableValues
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.toLowerCase());
+
+  if (searchableText.some((value) => value.includes(normalizedQuery))) {
+    return true;
+  }
+
+  const queryTokens = normalizedQuery.split(" ").filter(Boolean);
+  if (
+    queryTokens.length > 1 &&
+    queryTokens.every((token) => searchableText.some((value) => value.includes(token)))
+  ) {
     return true;
   }
 

@@ -78,6 +78,12 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(businesses[1], "manchester")).toBe(false);
   });
 
+  it("matches multi-term queries across different prospect fields", () => {
+    expect(businessMatchesProspectQuery(businesses[0], "dental canary")).toBe(true);
+    expect(businessMatchesProspectQuery(businesses[1], "legal london urgent")).toBe(true);
+    expect(businessMatchesProspectQuery(businesses[1], "legal manchester")).toBe(false);
+  });
+
   it("matches contact details when reviewers remember a phone number or website", () => {
     const business = prospect({ phone: "+44 20 7946 0123", website: "https://platinum-dental.example" });
 
