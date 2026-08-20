@@ -637,7 +637,7 @@ function BusinessContextDialog({ business, ticket, onClose }: { business: Busine
                   <a
                     href={websiteUrl}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/[0.06]"
                   >
                     Website <ExternalLink className="h-3.5 w-3.5" />

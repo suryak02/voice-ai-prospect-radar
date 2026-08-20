@@ -360,7 +360,7 @@ export function ProspectDashboard({ initialBusinesses }: { initialBusinesses: Bu
               <a
                 href="https://github.com/suryak02/voice-ai-prospect-radar"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
               >
                 GitHub repo <ArrowUpRight className="h-4 w-4" />

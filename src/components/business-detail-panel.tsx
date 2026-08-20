@@ -397,7 +397,7 @@ export function BusinessDetailPanel({
           <a
             href={websiteUrl}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 break-all transition hover:text-white"
           >
             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-500" /> {business.website}
@@ -406,7 +406,7 @@ export function BusinessDetailPanel({
         <a
           href={googleMapsDirectionsUrl(business)}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="flex items-center gap-2 font-medium text-indigo-300 transition hover:text-indigo-200"
         >
           <Navigation className="h-3.5 w-3.5 shrink-0" /> Get directions on Google Maps
