@@ -81,22 +81,20 @@ export async function searchGooglePlacesProspects(
     return { businesses: cached.value, cached: true, errors: [] };
   }
 
-  const errors: string[] = [];
-
   // Fetch every vertical concurrently. A single failing category degrades to an
   // empty list for that vertical instead of aborting the whole search.
-  const resultsByCategory = await Promise.all(
+  const resultsByCategory: { category: BusinessCategory; places: GooglePlace[]; error?: string }[] = await Promise.all(
     categories.map((category) =>
       searchPlaces(apiKey, `${categorySearchTerm(category)} in ${input.area}`, pageLimit)
         .then((places) => ({ category, places }))
         .catch((error) => {
           const message = error instanceof Error ? error.message : String(error);
           console.error(`Live prospect search failed for category "${category}".`, error);
-          errors.push(`${category}: ${message}`);
-          return { category, places: [] as GooglePlace[] };
+          return { category, places: [] as GooglePlace[], error: `${category}: ${message}` };
         }),
     ),
   );
+  const errors = resultsByCategory.flatMap((result) => (result.error ? [result.error] : []));
 
   const seenPlaceIds = new Set<string>();
   const businesses: Business[] = [];

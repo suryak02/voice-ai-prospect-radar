@@ -99,6 +99,30 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses).toHaveLength(1);
     expect(result.errors).toEqual(["plumber: Daily Places quota exceeded."]);
   });
+
+  it("keeps provider error messages in requested category order", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn((_url: RequestInfo | URL, init?: RequestInit) => {
+      const textQuery = String(JSON.parse(String(init?.body)).textQuery);
+      if (textQuery.startsWith("dentist")) {
+        return new Promise<Response>((resolve) => {
+          setTimeout(() => {
+            resolve(textResponse({ error: { message: "Dental search timed out." } }, { ok: false, status: 504 }));
+          }, 5);
+        });
+      }
+      return Promise.resolve(textResponse({ error: { message: "Plumber quota exhausted." } }, { ok: false, status: 429 }));
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Ordered Error Test Town",
+      categories: ["dental", "plumber"],
+    });
+
+    expect(result.errors).toEqual(["dental: Dental search timed out.", "plumber: Plumber quota exhausted."]);
+  });
 });
 
 function jsonResponse(body: unknown): Response {
