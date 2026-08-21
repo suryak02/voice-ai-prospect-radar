@@ -12,6 +12,12 @@ describe("readJsonResponse", () => {
     await expect(readJsonResponse(response)).rejects.toThrow("Database is unavailable.");
   });
 
+  it("trims API error messages before showing them to reviewers", async () => {
+    const response = Response.json({ error: "  Database is unavailable.\n" }, { status: 503 });
+
+    await expect(readJsonResponse(response)).rejects.toThrow(/^Database is unavailable\.$/);
+  });
+
   it("surfaces nested provider error messages from failed JSON responses", async () => {
     const response = Response.json({ error: { message: "API key is invalid." } }, { status: 403 });
 

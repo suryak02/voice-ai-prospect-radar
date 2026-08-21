@@ -32,10 +32,10 @@ function getErrorMessage(data: unknown): string | null {
   const { error, message, detail } = data as { error?: unknown; message?: unknown; detail?: unknown };
 
   for (const value of [error, message, detail]) {
-    if (typeof value === "string" && value.trim()) return value;
+    if (typeof value === "string" && value.trim()) return value.trim();
     if (value && typeof value === "object" && "message" in value) {
       const nestedMessage = (value as { message?: unknown }).message;
-      if (typeof nestedMessage === "string" && nestedMessage.trim()) return nestedMessage;
+      if (typeof nestedMessage === "string" && nestedMessage.trim()) return nestedMessage.trim();
     }
   }
 
