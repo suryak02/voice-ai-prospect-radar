@@ -68,6 +68,21 @@ describe("searchGooglePlacesProspects", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it("deduplicates repeated verticals before calling Google Places", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ places: [place("place-6", "Zeta Plumbing")] }));
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Duplicate Vertical Test Town",
+      categories: ["plumber", "plumber"],
+    });
+
+    expect(result.businesses).toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("reports failed Google Places responses without aborting other verticals", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn()

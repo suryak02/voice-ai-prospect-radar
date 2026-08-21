@@ -72,7 +72,7 @@ export async function searchGooglePlacesProspects(
   const apiKey = getEnvValue("GOOGLE_MAPS_API_KEY") ?? getEnvValue("GOOGLE_PLACES_API_KEY");
   if (!apiKey) return { businesses: [], cached: false, errors: ["GOOGLE_MAPS_API_KEY / GOOGLE_PLACES_API_KEY not set at runtime"] };
 
-  const categories = input.categories.slice(0, MAX_CATEGORIES);
+  const categories = [...new Set(input.categories)].slice(0, MAX_CATEGORIES);
   const pageLimit = getPlacesPageLimit();
   const cacheKey = `places:${input.area.trim().toLowerCase()}::${[...categories].sort().join(",")}::pages:${pageLimit}`;
   cleanupMemoryCache();
