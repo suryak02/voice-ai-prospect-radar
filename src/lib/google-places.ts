@@ -1,5 +1,5 @@
 import { getCache, setCache, cleanupMemoryCache } from "@/lib/cache";
-import { CATEGORY_META, categorySearchTerm, inferCategoryFromText } from "@/lib/categories";
+import { CATEGORY_META, MAX_LIVE_SEARCH_CATEGORIES, categorySearchTerm, inferCategoryFromText } from "@/lib/categories";
 import { getEnvValue } from "@/lib/env";
 import { readJsonResponse } from "@/lib/http-json";
 import { calculateVoiceAiScore } from "@/lib/scoring";
@@ -28,8 +28,6 @@ const FIELD_MASK = [
 const MAX_RESULTS_PER_PAGE = 20;
 const DEFAULT_MAX_PAGES_PER_QUERY = 3;
 const ABSOLUTE_MAX_PAGES_PER_QUERY = 3;
-// Safety cap on how many verticals a single search fans out to (bounds API cost).
-const MAX_CATEGORIES = 6;
 const CACHE_TTL_SECONDS = 60 * 30;
 
 // Bounding box covering the UK (incl. Northern Ireland). Used as a hard
@@ -72,7 +70,7 @@ export async function searchGooglePlacesProspects(
   const apiKey = getEnvValue("GOOGLE_MAPS_API_KEY") ?? getEnvValue("GOOGLE_PLACES_API_KEY");
   if (!apiKey) return { businesses: [], cached: false, errors: ["GOOGLE_MAPS_API_KEY / GOOGLE_PLACES_API_KEY not set at runtime"] };
 
-  const categories = [...new Set(input.categories)].slice(0, MAX_CATEGORIES);
+  const categories = [...new Set(input.categories)].slice(0, MAX_LIVE_SEARCH_CATEGORIES);
   const pageLimit = getPlacesPageLimit();
   const cacheKey = `places:${input.area.trim().toLowerCase()}::${[...categories].sort().join(",")}::pages:${pageLimit}`;
   cleanupMemoryCache();

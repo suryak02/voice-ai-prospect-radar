@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MAX_LIVE_SEARCH_CATEGORIES } from "./categories";
 import { searchGooglePlacesProspects } from "./google-places";
 
 const originalGoogleMapsKey = process.env.GOOGLE_MAPS_API_KEY;
@@ -81,6 +82,26 @@ describe("searchGooglePlacesProspects", () => {
 
     expect(result.businesses).toHaveLength(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses the shared live-search category cap for provider fanout", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    let callCount = 0;
+    const fetchMock = vi.fn(() => {
+      callCount += 1;
+      return Promise.resolve(jsonResponse({ places: [place(`place-cap-${callCount}`, `Capped Prospect ${callCount}`)] }));
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Category Cap Test Town",
+      categories: ["dental", "aesthetics", "veterinary", "physiotherapy", "chiropractor", "optometry", "dermatology"],
+    });
+
+    expect(result.businesses).toHaveLength(MAX_LIVE_SEARCH_CATEGORIES);
+    expect(fetchMock).toHaveBeenCalledTimes(MAX_LIVE_SEARCH_CATEGORIES);
+    expect(requestBody(fetchMock, MAX_LIVE_SEARCH_CATEGORIES - 1).textQuery).toContain("opticians or optometrist");
   });
 
   it("reports failed Google Places responses without aborting other verticals", async () => {
