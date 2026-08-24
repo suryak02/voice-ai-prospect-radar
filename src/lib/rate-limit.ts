@@ -50,11 +50,12 @@ const buckets = new Map<string, RateLimitEntry>();
 
 function inMemoryCheck({ key, limit, windowMs }: RateLimitOptions): RateLimitResult {
   const now = Date.now();
-  const existing = buckets.get(key);
+  const bucketKey = `${limit}:${windowMs}:${key}`;
+  const existing = buckets.get(bucketKey);
 
   if (!existing || existing.resetAt <= now) {
     const fresh = { count: 1, resetAt: now + windowMs };
-    buckets.set(key, fresh);
+    buckets.set(bucketKey, fresh);
     return { allowed: true, remaining: limit - 1, resetAt: fresh.resetAt };
   }
 
