@@ -67,6 +67,7 @@ describe("prospect filters", () => {
 
   it("normalizes reviewer search queries before matching", () => {
     expect(normalizeProspectSearchQuery("  Dental   Canary   Wharf  ")).toBe("dental canary wharf");
+    expect(normalizeProspectSearchQuery("Canary-Wharf / dental.clinic")).toBe("canary wharf dental clinic");
     expect(hasActiveProspectFilters({ query: "   ", categoryFilter: "all", minimumScore: 0 })).toBe(false);
   });
 
@@ -90,6 +91,7 @@ describe("prospect filters", () => {
 
   it("matches multi-term queries across different prospect fields", () => {
     expect(businessMatchesProspectQuery(businesses[0], "dental canary")).toBe(true);
+    expect(businessMatchesProspectQuery(businesses[0], "canary-wharf dental")).toBe(true);
     expect(businessMatchesProspectQuery(businesses[1], "legal london urgent")).toBe(true);
     expect(businessMatchesProspectQuery(businesses[1], "legal manchester")).toBe(false);
   });
