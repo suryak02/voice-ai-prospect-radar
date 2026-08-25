@@ -272,10 +272,14 @@ function stableBusinessId(placeId: string, name: string): string {
 }
 
 function slugify(value: string): string {
-  return value
+  const slug = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/&/g, "and")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 70);
+
+  return slug || "prospect";
 }

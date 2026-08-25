@@ -134,6 +134,30 @@ describe("searchGooglePlacesProspects", () => {
     expect(requestBody(fetchMock, MAX_LIVE_SEARCH_CATEGORIES - 1).textQuery).toContain("opticians or optometrist");
   });
 
+  it("creates readable stable IDs for accented or punctuation-only place names", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          place("google-place-accent-12345678", "Café Santé & Co"),
+          place("google-place-symbols-87654321", "!!!"),
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Stable ID Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses.map((business) => business.id)).toEqual([
+      "cafe-sante-and-co-12345678",
+      "prospect-87654321",
+    ]);
+  });
+
   it("reports failed Google Places responses without aborting other verticals", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn()
