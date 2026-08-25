@@ -29,14 +29,29 @@ export async function readJsonResponse<T>(response: Response): Promise<T> {
 
 function getErrorMessage(data: unknown): string | null {
   if (!data || typeof data !== "object") return null;
-  const { error, message, detail } = data as { error?: unknown; message?: unknown; detail?: unknown };
+  const { error, errors, message, detail } = data as { error?: unknown; errors?: unknown; message?: unknown; detail?: unknown };
 
-  for (const value of [error, message, detail]) {
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (value && typeof value === "object" && "message" in value) {
-      const nestedMessage = (value as { message?: unknown }).message;
-      if (typeof nestedMessage === "string" && nestedMessage.trim()) return nestedMessage.trim();
-    }
+  for (const value of [error, errors, message, detail]) {
+    const message = extractErrorMessage(value);
+    if (message) return message;
+  }
+
+  return null;
+}
+
+function extractErrorMessage(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value.trim();
+
+  if (Array.isArray(value)) {
+    const messages = value.flatMap((item) => {
+      const message = extractErrorMessage(item);
+      return message ? [message] : [];
+    });
+    return messages.length > 0 ? messages.join("; ") : null;
+  }
+
+  if (value && typeof value === "object" && "message" in value) {
+    return extractErrorMessage((value as { message?: unknown }).message);
   }
 
   return null;

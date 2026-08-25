@@ -33,6 +33,15 @@ describe("readJsonResponse", () => {
     );
   });
 
+  it("combines array-style provider error messages", async () => {
+    const response = Response.json(
+      { errors: [{ message: "Area is required." }, { message: "Choose at least one category." }] },
+      { status: 400 },
+    );
+
+    await expect(readJsonResponse(response)).rejects.toThrow("Area is required.; Choose at least one category.");
+  });
+
   it("turns empty failed responses into actionable errors", async () => {
     const response = new Response(null, { status: 500 });
 
