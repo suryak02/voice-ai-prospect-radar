@@ -24,12 +24,18 @@ describe("readJsonResponse", () => {
     await expect(readJsonResponse(response)).rejects.toThrow("API key is invalid.");
   });
 
-  it("also surfaces API message and detail fields from failed responses", async () => {
+  it("also surfaces API message, detail, and OAuth-style error fields from failed responses", async () => {
     await expect(readJsonResponse(Response.json({ message: "Quota exceeded." }, { status: 429 }))).rejects.toThrow(
       "Quota exceeded.",
     );
     await expect(readJsonResponse(Response.json({ detail: "Invalid postcode." }, { status: 400 }))).rejects.toThrow(
       "Invalid postcode.",
+    );
+    await expect(
+      readJsonResponse(Response.json({ error_description: "Refresh token expired." }, { status: 401 })),
+    ).rejects.toThrow("Refresh token expired.");
+    await expect(readJsonResponse(Response.json({ title: "Bad Gateway", reason: "Upstream closed" }, { status: 502 }))).rejects.toThrow(
+      "Bad Gateway",
     );
   });
 
