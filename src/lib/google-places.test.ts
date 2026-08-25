@@ -134,6 +134,39 @@ describe("searchGooglePlacesProspects", () => {
     expect(requestBody(fetchMock, MAX_LIVE_SEARCH_CATEGORIES - 1).textQuery).toContain("opticians or optometrist");
   });
 
+  it("trims blank contact fields before scoring live prospects", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          {
+            ...place("place-contact-cleanup", "Contact Cleanup Dental"),
+            formattedAddress: "   ",
+            nationalPhoneNumber: "   ",
+            internationalPhoneNumber: " +44 20 7000 0001 ",
+            websiteUri: "   ",
+            googleMapsUri: " https://maps.google.com/?cid=contact-cleanup ",
+          },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Contact Cleanup Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses[0]).toMatchObject({
+      address: "Contact Cleanup Test Town",
+      phone: "+44 20 7000 0001",
+      website: "https://maps.google.com/?cid=contact-cleanup",
+      hasWebsite: false,
+      hasVisiblePhone: true,
+    });
+  });
+
   it("creates readable stable IDs for accented or punctuation-only place names", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(

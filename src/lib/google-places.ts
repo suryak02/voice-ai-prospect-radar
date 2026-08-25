@@ -173,11 +173,16 @@ function normalizeSearchArea(area: string): string {
 
 function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, area: string): Business {
   const name = place.displayName?.text?.trim() || "Unnamed place";
+  const address = optionalText(place.formattedAddress) ?? area;
+  const nationalPhoneNumber = optionalText(place.nationalPhoneNumber);
+  const internationalPhoneNumber = optionalText(place.internationalPhoneNumber);
+  const websiteUri = optionalText(place.websiteUri);
+  const googleMapsUri = optionalText(place.googleMapsUri);
   const category = inferCategoryFromText(`${(place.types ?? []).join(" ")} ${name}`, requestedCategory);
   const config = CATEGORY_META[category];
-  const hasWebsite = Boolean(place.websiteUri);
-  const hasVisiblePhone = Boolean(place.nationalPhoneNumber || place.internationalPhoneNumber);
-  const hasOnlineBooking = inferOnlineBooking(place.websiteUri);
+  const hasWebsite = Boolean(websiteUri);
+  const hasVisiblePhone = Boolean(nationalPhoneNumber ?? internationalPhoneNumber);
+  const hasOnlineBooking = inferOnlineBooking(websiteUri);
   const reviewPainSignals = inferReviewPainSignals(place.userRatingCount, place.rating);
   const { score, breakdown } = calculateVoiceAiScore({
     category,
@@ -195,12 +200,12 @@ function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, are
     googlePlaceId: place.id,
     name,
     category,
-    address: place.formattedAddress ?? area,
-    borough: inferAreaLabel(place.formattedAddress ?? area, area),
+    address,
+    borough: inferAreaLabel(address, area),
     latitude: place.location?.latitude ?? 51.52,
     longitude: place.location?.longitude ?? -0.06,
-    phone: place.nationalPhoneNumber ?? place.internationalPhoneNumber,
-    website: place.websiteUri ?? place.googleMapsUri,
+    phone: nationalPhoneNumber ?? internationalPhoneNumber,
+    website: websiteUri ?? googleMapsUri,
     rating: place.rating,
     reviewCount: place.userRatingCount,
     hasWebsite,
@@ -215,6 +220,11 @@ function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, are
     reasoning: buildReasoning({ category, hasWebsite, hasOnlineBooking, hasVisiblePhone, reviewCount: place.userRatingCount, rating: place.rating }),
     status: score >= 7 ? ("needs_review" as BusinessStatus) : ("new" as BusinessStatus),
   };
+}
+
+function optionalText(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
 }
 
 function inferAreaLabel(address: string, requestedArea: string): string {
