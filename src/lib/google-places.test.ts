@@ -15,6 +15,36 @@ afterEach(() => {
 });
 
 describe("searchGooglePlacesProspects", () => {
+  it("rejects blank live-search areas before calling Google Places", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn();
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "   ",
+      categories: ["plumber"],
+    });
+
+    expect(result).toEqual({ businesses: [], cached: false, errors: ["Search area is required."] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects empty live-search category selections before calling Google Places", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn();
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "London",
+      categories: [],
+    });
+
+    expect(result).toEqual({ businesses: [], cached: false, errors: ["Select at least one prospect category."] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("requests and follows Google Places pagination tokens", async () => {
     process.env.GOOGLE_MAPS_API_KEY = " test-key ";
     process.env.PLACES_SEARCH_PAGE_LIMIT = "2";

@@ -70,9 +70,14 @@ export async function searchGooglePlacesProspects(
   const apiKey = getEnvValue("GOOGLE_MAPS_API_KEY") ?? getEnvValue("GOOGLE_PLACES_API_KEY");
   if (!apiKey) return { businesses: [], cached: false, errors: ["GOOGLE_MAPS_API_KEY / GOOGLE_PLACES_API_KEY not set at runtime"] };
 
+  const area = normalizeSearchArea(input.area);
+  if (!area) return { businesses: [], cached: false, errors: ["Search area is required."] };
+
   const categories = [...new Set(input.categories)].slice(0, MAX_LIVE_SEARCH_CATEGORIES);
+  if (categories.length === 0) return { businesses: [], cached: false, errors: ["Select at least one prospect category."] };
+
   const pageLimit = getPlacesPageLimit();
-  const cacheKey = `places:${input.area.trim().toLowerCase()}::${[...categories].sort().join(",")}::pages:${pageLimit}`;
+  const cacheKey = `places:${area.toLowerCase()}::${[...categories].sort().join(",")}::pages:${pageLimit}`;
   cleanupMemoryCache();
   const cached = await getCache<Business[]>(cacheKey);
   if (cached.value) {
@@ -83,7 +88,7 @@ export async function searchGooglePlacesProspects(
   // empty list for that vertical instead of aborting the whole search.
   const resultsByCategory: { category: BusinessCategory; places: GooglePlace[]; error?: string }[] = await Promise.all(
     categories.map((category) =>
-      searchPlaces(apiKey, `${categorySearchTerm(category)} in ${input.area}`, pageLimit)
+      searchPlaces(apiKey, `${categorySearchTerm(category)} in ${area}`, pageLimit)
         .then((places) => ({ category, places }))
         .catch((error) => {
           const message = error instanceof Error ? error.message : String(error);
@@ -105,7 +110,7 @@ export async function searchGooglePlacesProspects(
         continue;
       }
       seenPlaceIds.add(place.id);
-      businesses.push(toBusiness(place, category, input.area));
+      businesses.push(toBusiness(place, category, area));
     }
   }
 
@@ -160,6 +165,10 @@ function getPlacesPageLimit(): number {
   const configured = Number(getEnvValue("PLACES_SEARCH_PAGE_LIMIT") ?? DEFAULT_MAX_PAGES_PER_QUERY);
   if (!Number.isFinite(configured)) return DEFAULT_MAX_PAGES_PER_QUERY;
   return Math.min(Math.max(Math.floor(configured), 1), ABSOLUTE_MAX_PAGES_PER_QUERY);
+}
+
+function normalizeSearchArea(area: string): string {
+  return area.trim().replace(/\s+/g, " ");
 }
 
 function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, area: string): Business {
