@@ -58,8 +58,12 @@ function extractErrorMessage(value: unknown): string | null {
     return messages.length > 0 ? messages.join("; ") : null;
   }
 
-  if (value && typeof value === "object" && "message" in value) {
-    return extractErrorMessage((value as { message?: unknown }).message);
+  if (value && typeof value === "object") {
+    const objectValue = value as Record<string, unknown>;
+    for (const key of ["message", "error_description", "detail", "title", "reason", "errors", "error"]) {
+      const message = extractErrorMessage(objectValue[key]);
+      if (message) return message;
+    }
   }
 
   return null;

@@ -48,6 +48,15 @@ describe("readJsonResponse", () => {
     await expect(readJsonResponse(response)).rejects.toThrow("Area is required.; Choose at least one category.");
   });
 
+  it("combines nested provider error arrays inside an error object", async () => {
+    const response = Response.json(
+      { error: { errors: [{ message: "Invalid location restriction." }, { detail: "Radius is too wide." }] } },
+      { status: 400 },
+    );
+
+    await expect(readJsonResponse(response)).rejects.toThrow("Invalid location restriction.; Radius is too wide.");
+  });
+
   it("turns empty failed responses into actionable errors", async () => {
     const response = new Response(null, { status: 500 });
 
