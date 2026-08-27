@@ -29,6 +29,10 @@ function getLimiter(limit: number, windowMs: number): Ratelimit | null {
 }
 
 export async function checkRateLimit({ key, limit, windowMs }: RateLimitOptions): Promise<RateLimitResult> {
+  if (!isValidRateLimitQuota(limit, windowMs)) {
+    return { allowed: false, remaining: 0, resetAt: Date.now() };
+  }
+
   const limiter = getLimiter(limit, windowMs);
   if (limiter) {
     try {
@@ -41,6 +45,10 @@ export async function checkRateLimit({ key, limit, windowMs }: RateLimitOptions)
     }
   }
   return inMemoryCheck({ key, limit, windowMs });
+}
+
+function isValidRateLimitQuota(limit: number, windowMs: number): boolean {
+  return Number.isFinite(limit) && Number.isFinite(windowMs) && limit > 0 && windowMs > 0;
 }
 
 // ---- In-memory fallback (per serverless instance) ----

@@ -28,4 +28,15 @@ describe("rate limit helpers", () => {
       remaining: 0,
     });
   });
+
+  it("fails closed for malformed quota settings", async () => {
+    await expect(checkRateLimit({ key: "invalid-limit", limit: 0, windowMs: 60_000 })).resolves.toMatchObject({
+      allowed: false,
+      remaining: 0,
+    });
+    await expect(checkRateLimit({ key: "invalid-window", limit: 10, windowMs: Number.NaN })).resolves.toMatchObject({
+      allowed: false,
+      remaining: 0,
+    });
+  });
 });
