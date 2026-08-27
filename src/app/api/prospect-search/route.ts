@@ -4,6 +4,7 @@ import { CATEGORY_ENUM_VALUES } from "@/lib/categories";
 import { getBusinesses, persistBusinesses } from "@/lib/data/businesses";
 import { searchGooglePlacesProspects } from "@/lib/google-places";
 import { checkRateLimit, cleanupRateLimitBuckets, secondsUntilRateLimitReset } from "@/lib/rate-limit";
+import { getClientIpFromHeaders } from "@/lib/request-ip";
 import type { BusinessCategory } from "@/lib/types";
 
 const categorySchema = z.enum(CATEGORY_ENUM_VALUES);
@@ -21,7 +22,7 @@ const searchSchema = z.object({
 export async function POST(request: NextRequest) {
   cleanupRateLimitBuckets();
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
+  const ip = getClientIpFromHeaders(request.headers);
   const rateLimit = await checkRateLimit({ key: `prospect-search:${ip}`, limit: 8, windowMs: 60 * 60 * 1000 });
 
   if (!rateLimit.allowed) {
