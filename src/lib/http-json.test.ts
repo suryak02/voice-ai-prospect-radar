@@ -48,6 +48,15 @@ describe("readJsonResponse", () => {
     await expect(readJsonResponse(response)).rejects.toThrow("Area is required.; Choose at least one category.");
   });
 
+  it("surfaces direct string and array JSON error bodies", async () => {
+    await expect(readJsonResponse(Response.json("Quota exhausted.", { status: 429 }))).rejects.toThrow(
+      "Quota exhausted.",
+    );
+    await expect(
+      readJsonResponse(Response.json([{ message: "Invalid API key." }, { detail: "Rotate the key." }], { status: 401 })),
+    ).rejects.toThrow("Invalid API key.; Rotate the key.");
+  });
+
   it("combines nested provider error arrays inside an error object", async () => {
     const response = Response.json(
       { error: { errors: [{ message: "Invalid location restriction." }, { detail: "Radius is too wide." }] } },

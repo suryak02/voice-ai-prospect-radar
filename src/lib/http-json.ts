@@ -28,6 +28,9 @@ export async function readJsonResponse<T>(response: Response): Promise<T> {
 }
 
 function getErrorMessage(data: unknown): string | null {
+  const directMessage = extractErrorMessage(data);
+  if (directMessage) return directMessage;
+
   if (!data || typeof data !== "object") return null;
   const { error, errors, message, detail, error_description, title, reason } = data as {
     error?: unknown;
