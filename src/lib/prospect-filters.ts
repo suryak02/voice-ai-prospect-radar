@@ -38,6 +38,7 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
     business.category,
     CATEGORY_META[business.category].label,
     business.recommendedUseCase,
+    business.reasoning,
     ...business.reviewPainSignals,
   ];
 

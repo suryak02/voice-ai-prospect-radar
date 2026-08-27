@@ -79,6 +79,13 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(businesses[1], "manchester")).toBe(false);
   });
 
+  it("matches terms from the prospect scoring rationale", () => {
+    const business = prospect({ reasoning: "Premium clinic with visible booking friction after hours." });
+
+    expect(businessMatchesProspectQuery(business, "booking friction")).toBe(true);
+    expect(businessMatchesProspectQuery(business, "after hours")).toBe(true);
+  });
+
   it("matches prospect text without requiring accented characters", () => {
     const business = prospect({
       name: "Café Santé Clinic",
