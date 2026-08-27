@@ -22,7 +22,7 @@ function normalizeSearchText(value: string): string {
 }
 
 export function hasActiveProspectFilters({ query, categoryFilter, minimumScore }: ProspectFilterState) {
-  return normalizeProspectSearchQuery(query).length > 0 || categoryFilter !== "all" || minimumScore > 0;
+  return normalizeProspectSearchQuery(query).length > 0 || categoryFilter !== "all" || normalizeMinimumScore(minimumScore) > 0;
 }
 
 export function businessMatchesProspectQuery(business: Business, query: string) {
@@ -92,14 +92,21 @@ function getPhoneNumberVariants(digits: string) {
 }
 
 export function filterProspects(businesses: Business[], filters: ProspectFilterState) {
+  const minimumScore = normalizeMinimumScore(filters.minimumScore);
+
   return businesses.filter((business) => {
     const categoryMatches = filters.categoryFilter === "all" || business.category === filters.categoryFilter;
     return (
       categoryMatches &&
-      business.voiceAiScore >= filters.minimumScore &&
+      business.voiceAiScore >= minimumScore &&
       businessMatchesProspectQuery(business, filters.query)
     );
   });
+}
+
+function normalizeMinimumScore(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(Math.max(Math.floor(value), 0), 9);
 }
 
 export function resolveSelectedProspect({

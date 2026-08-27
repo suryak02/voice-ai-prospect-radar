@@ -129,6 +129,25 @@ describe("prospect filters", () => {
     ).toEqual(["dental-1"]);
   });
 
+  it("normalizes malformed reviewer score filters instead of hiding every prospect", () => {
+    expect(hasActiveProspectFilters({ query: "", categoryFilter: "all", minimumScore: Number.NaN })).toBe(false);
+    expect(
+      filterProspects(businesses, {
+        query: "",
+        categoryFilter: "all",
+        minimumScore: Number.NaN,
+      }).map((business) => business.id),
+    ).toEqual(["dental-1", "legal-1", "retail-1"]);
+
+    expect(
+      filterProspects(businesses, {
+        query: "",
+        categoryFilter: "all",
+        minimumScore: 7.8,
+      }).map((business) => business.id),
+    ).toEqual(["dental-1", "legal-1"]);
+  });
+
   it("does not keep a stale selected prospect when active filters have zero matches", () => {
     const filters = { query: "no matching prospect", categoryFilter: "all" as const, minimumScore: 0 };
     const filteredBusinesses = filterProspects(businesses, filters);
