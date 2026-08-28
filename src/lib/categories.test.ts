@@ -29,6 +29,12 @@ describe("category metadata", () => {
     expect(inferCategoryFromText("guest house bed and breakfast reception", "other")).toBe("hotel");
   });
 
+  it("avoids substring false positives from short category keywords", () => {
+    expect(inferCategoryFromText("independent accident repair centre", "auto_repair")).toBe("auto_repair");
+    expect(inferCategoryFromText("veterans community advice", "legal")).toBe("legal");
+    expect(inferCategoryFromText("day spa and facial clinic", "other")).toBe("spa");
+  });
+
   it("keeps selected categories removable when the live-search limit is reached", () => {
     const selected = ["dental", "aesthetics", "veterinary", "physiotherapy", "chiropractor", "optometry"] as const;
 

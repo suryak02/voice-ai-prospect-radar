@@ -534,6 +534,8 @@ export const CATEGORY_GROUP_ORDER: CategoryGroup[] = [
   "Other",
 ];
 
+const WHOLE_WORD_INFER_KEYWORDS = new Set(["dent", "law", "mot", "spa", "vet"]);
+
 /** Categories grouped for `<optgroup>` rendering in the dashboard dropdowns. */
 export function getCategoryOptionGroups(): { group: CategoryGroup; options: { value: BusinessCategory; label: string }[] }[] {
   return CATEGORY_GROUP_ORDER.map((group) => ({
@@ -566,11 +568,20 @@ export function inferCategoryFromText(text: string, fallback: BusinessCategory):
 
   for (const meta of Object.values(CATEGORY_META)) {
     for (const keyword of meta.inferKeywords) {
-      if (haystack.includes(keyword) && (!best || keyword.length > best.length)) {
+      if (matchesInferKeyword(haystack, keyword) && (!best || keyword.length > best.length)) {
         best = { category: meta.value, length: keyword.length };
       }
     }
   }
 
   return best?.category ?? fallback;
+}
+
+function matchesInferKeyword(haystack: string, keyword: string): boolean {
+  if (!WHOLE_WORD_INFER_KEYWORDS.has(keyword)) return haystack.includes(keyword);
+  return new RegExp(`(^|[^a-z0-9])${escapeRegExp(keyword)}(?=$|[^a-z0-9])`, "i").test(haystack);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
