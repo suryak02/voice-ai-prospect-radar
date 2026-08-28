@@ -66,6 +66,15 @@ describe("readJsonResponse", () => {
     await expect(readJsonResponse(response)).rejects.toThrow("Invalid location restriction.; Radius is too wide.");
   });
 
+  it("includes HTTP status text when failed JSON has no provider message", async () => {
+    await expect(readJsonResponse(Response.json({}, { status: 502, statusText: "Bad Gateway" }))).rejects.toThrow(
+      "Request failed with 502 Bad Gateway.",
+    );
+    await expect(readJsonResponse(Response.json({}, { status: 418, statusText: "  " }))).rejects.toThrow(
+      "Request failed with 418.",
+    );
+  });
+
   it("turns empty failed responses into actionable errors", async () => {
     const response = new Response(null, { status: 500 });
 

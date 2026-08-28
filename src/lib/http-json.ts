@@ -21,10 +21,15 @@ export async function readJsonResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     const error = getErrorMessage(data);
-    throw new Error(error ?? `Request failed with ${response.status}.`);
+    throw new Error(error ?? getFallbackFailureMessage(response));
   }
 
   return data as T;
+}
+
+function getFallbackFailureMessage(response: Response): string {
+  const statusText = response.statusText?.trim();
+  return statusText ? `Request failed with ${response.status} ${statusText}.` : `Request failed with ${response.status}.`;
 }
 
 function getErrorMessage(data: unknown): string | null {
