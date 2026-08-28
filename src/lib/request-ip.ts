@@ -7,7 +7,23 @@ export function getClientIpFromHeaders(headers: Pick<Headers, "get">): string {
     if (forwardedIp) return forwardedIp;
   }
 
+  const forwarded = headers.get("forwarded");
+  if (forwarded) {
+    const forwardedIp = forwarded.split(",").map(getForwardedForValue).map(normalizeClientIp).find(Boolean);
+    if (forwardedIp) return forwardedIp;
+  }
+
   return normalizeClientIp(headers.get("x-real-ip")) ?? FALLBACK_CLIENT_IP;
+}
+
+function getForwardedForValue(entry: string): string | null {
+  const forParameter = entry
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.toLowerCase().startsWith("for="));
+
+  if (!forParameter) return null;
+  return forParameter.slice(4).trim().replace(/^"|"$/g, "");
 }
 
 function normalizeClientIp(value: string | null): string | undefined {

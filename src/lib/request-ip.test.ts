@@ -16,8 +16,16 @@ describe("getClientIpFromHeaders", () => {
     ).toBe("203.0.113.10");
   });
 
+  it("falls back to the standard Forwarded header before x-real-ip", () => {
+    expect(
+      getClientIpFromHeaders(
+        headers({ forwarded: "for=\"[2001:db8::5]:443\";proto=https, for=198.51.100.8", "x-real-ip": "198.51.100.9" }),
+      ),
+    ).toBe("2001:db8::5");
+  });
+
   it("falls back to x-real-ip when forwarded IP is missing or unknown", () => {
-    expect(getClientIpFromHeaders(headers({ "x-forwarded-for": " unknown ", "x-real-ip": "198.51.100.9" }))).toBe(
+    expect(getClientIpFromHeaders(headers({ "x-forwarded-for": " unknown ", forwarded: "for=unknown", "x-real-ip": "198.51.100.9" }))).toBe(
       "198.51.100.9",
     );
   });
