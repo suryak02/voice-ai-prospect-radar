@@ -11,10 +11,40 @@ export function getClientIpFromHeaders(headers: Pick<Headers, "get">): string {
 }
 
 function normalizeClientIp(value: string | null): string | undefined {
-  const normalized = value?.trim();
+  let normalized = value?.trim();
   if (!normalized || normalized.toLowerCase() === "unknown") return undefined;
 
+  normalized = stripForwardedPort(normalized);
+
   // Accept ordinary IPv4/IPv6 values plus provider-added zone identifiers,
-  // while rejecting whitespace/control characters and header-injection input.
-  return /^[a-z0-9:.%-]+$/i.test(normalized) ? normalized : undefined;
+  // while rejecting hostnames, whitespace/control characters and header-injection input.
+  if (isValidIpv4(normalized) || isSafeIpv6Candidate(normalized)) return normalized;
+  return undefined;
+}
+
+function stripForwardedPort(value: string): string {
+  const bracketedIpv6 = /^\[([^\]]+)](?::\d+)?$/.exec(value);
+  if (bracketedIpv6) return bracketedIpv6[1];
+
+  const ipv4WithPort = /^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/.exec(value);
+  return ipv4WithPort?.[1] ?? value;
+}
+
+function isValidIpv4(value: string): boolean {
+  const parts = value.split(".");
+  return (
+    parts.length === 4 &&
+    parts.every((part) => {
+      if (!/^\d{1,3}$/.test(part)) return false;
+      const octet = Number(part);
+      return octet >= 0 && octet <= 255;
+    })
+  );
+}
+
+function isSafeIpv6Candidate(value: string): boolean {
+  if (!value.includes(":")) return false;
+  const [address, zone] = value.split("%", 2);
+  if (zone && !/^[a-z0-9._-]+$/i.test(zone)) return false;
+  return /^[0-9a-f:.]+$/i.test(address) && /[0-9a-f]/i.test(address);
 }
