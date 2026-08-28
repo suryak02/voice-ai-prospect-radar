@@ -106,7 +106,8 @@ export async function searchGooglePlacesProspects(
     for (const place of places) {
       if (!place.id || seenPlaceIds.has(place.id)) continue;
       if (place.businessStatus && place.businessStatus !== "OPERATIONAL") continue;
-      if (place.location?.latitude != null && place.location?.longitude != null && !isInUk(place.location.latitude, place.location.longitude)) {
+      if (!placeHasUsableCoordinates(place)) continue;
+      if (!isInUk(place.location.latitude, place.location.longitude)) {
         continue;
       }
       seenPlaceIds.add(place.id);
@@ -225,6 +226,12 @@ function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, are
 function optionalText(value?: string): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function placeHasUsableCoordinates(place: GooglePlace): place is GooglePlace & {
+  location: { latitude: number; longitude: number };
+} {
+  return Number.isFinite(place.location?.latitude) && Number.isFinite(place.location?.longitude);
 }
 
 function inferAreaLabel(address: string, requestedArea: string): string {

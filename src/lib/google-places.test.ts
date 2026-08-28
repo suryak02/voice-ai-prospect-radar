@@ -191,6 +191,28 @@ describe("searchGooglePlacesProspects", () => {
     ]);
   });
 
+  it("skips places without usable coordinates instead of placing them on the fallback map point", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          place("place-with-coordinates", "Mapped Dental"),
+          { ...place("place-no-location", "Unmapped Dental"), location: undefined },
+          { ...place("place-partial-location", "Partial Dental"), location: { latitude: 51.5 } },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Coordinate Quality Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses.map((business) => business.googlePlaceId)).toEqual(["place-with-coordinates"]);
+  });
+
   it("reports failed Google Places responses without aborting other verticals", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn()
