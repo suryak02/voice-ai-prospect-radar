@@ -51,6 +51,11 @@ export function normalizeTicketStatus(status: string): TicketPipelineStatus {
   return "open";
 }
 
+export function normalizeTicketScore(score: number): number {
+  if (!Number.isFinite(score)) return 0;
+  return Math.min(Math.max(Math.round(score), 0), 9);
+}
+
 export type TicketMetrics = {
   total: number;
   byStatus: Record<TicketPipelineStatus, number>;
@@ -73,9 +78,10 @@ export function calculateTicketMetrics(tickets: Ticket[]): TicketMetrics {
 
   for (const ticket of tickets) {
     const status = normalizeTicketStatus(ticket.status);
+    const score = normalizeTicketScore(ticket.score);
     byStatus[status] += 1;
-    scoreTotal += ticket.score;
-    if (status === "open" && ticket.score >= 8) highScoreOpen += 1;
+    scoreTotal += score;
+    if (status === "open" && score >= 8) highScoreOpen += 1;
   }
 
   const closedTotal = byStatus.won + byStatus.lost;
