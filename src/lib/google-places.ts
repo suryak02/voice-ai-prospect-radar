@@ -253,9 +253,26 @@ function inferAreaLabel(address: string, requestedArea: string): string {
 function inferOnlineBooking(websiteUri?: string): boolean {
   if (!websiteUri) return false;
   const normalized = websiteUri.toLowerCase();
-  return ["book", "booking", "appoint", "cliniko", "doctify", "dentally", "zocdoc", "resdiary", "opentable"].some((token) =>
-    normalized.includes(token),
-  );
+  return [
+    "book",
+    "booking",
+    "appoint",
+    "acuityscheduling",
+    "booksy",
+    "calendly",
+    "cliniko",
+    "dentally",
+    "doctify",
+    "fresha",
+    "mindbody",
+    "opentable",
+    "phorest",
+    "resdiary",
+    "setmore",
+    "simplybook",
+    "treatwell",
+    "zocdoc",
+  ].some((token) => normalized.includes(token));
 }
 
 function inferReviewPainSignals(reviewCount?: number, rating?: number): string[] {

@@ -167,6 +167,32 @@ describe("searchGooglePlacesProspects", () => {
     });
   });
 
+  it("detects common booking-platform website URLs as online booking signals", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          {
+            ...place("place-booking-platform", "Fresha Dental Studio"),
+            websiteUri: "https://www.fresha.com/a/fresha-dental-studio-london",
+          },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Booking Platform Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses[0]).toMatchObject({
+      hasOnlineBooking: true,
+    });
+    expect(result.businesses[0].reasoning).toContain("Visible booking signals");
+  });
+
   it("creates readable stable IDs for accented or punctuation-only place names", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(
