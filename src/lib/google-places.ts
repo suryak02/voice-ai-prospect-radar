@@ -290,8 +290,9 @@ function buildReasoning(input: {
   reviewCount?: number;
   rating?: number;
 }): string {
+  const categoryLabel = CATEGORY_META[input.category].label;
   const parts = [
-    `${input.category} is an appointment-led vertical worth evaluating for Voice AI.`,
+    `${categoryLabel} is an appointment-led vertical worth evaluating for Voice AI.`,
     input.hasVisiblePhone ? "A public phone number indicates a live call path." : "No public phone was found, lowering confidence.",
     input.hasOnlineBooking ? "Visible booking signals reduce urgency but keep reminder/call-cover use cases." : "No obvious booking signal was found, so scheduling friction is plausible.",
   ];

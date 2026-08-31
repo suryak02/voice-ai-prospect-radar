@@ -175,6 +175,7 @@ describe("searchGooglePlacesProspects", () => {
           {
             ...place("place-booking-platform", "Fresha Dental Studio"),
             websiteUri: "https://www.fresha.com/a/fresha-dental-studio-london",
+            types: ["dentist"],
           },
         ],
       }),
@@ -190,6 +191,7 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses[0]).toMatchObject({
       hasOnlineBooking: true,
     });
+    expect(result.businesses[0].reasoning).toContain("Dental is an appointment-led vertical");
     expect(result.businesses[0].reasoning).toContain("Visible booking signals");
   });
 
