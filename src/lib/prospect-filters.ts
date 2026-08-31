@@ -1,4 +1,5 @@
 import { CATEGORY_META } from "./categories";
+import { getScoreLabel, getScoreTier } from "./scoring";
 import type { Business, BusinessCategory } from "./types";
 
 export type ProspectFilterState = {
@@ -37,6 +38,10 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
     business.website,
     business.category,
     CATEGORY_META[business.category].label,
+    String(business.voiceAiScore),
+    `Score ${business.voiceAiScore}`,
+    getScoreLabel(business.voiceAiScore),
+    getScoreTier(business.voiceAiScore),
     business.recommendedUseCase,
     business.reasoning,
     ...business.reviewPainSignals,

@@ -64,7 +64,6 @@ describe("prospect filters", () => {
     }),
   ];
 
-
   it("normalizes reviewer search queries before matching", () => {
     expect(normalizeProspectSearchQuery("  Dental   Canary   Wharf  ")).toBe("dental canary wharf");
     expect(normalizeProspectSearchQuery("Canary-Wharf / dental.clinic")).toBe("canary wharf dental clinic");
@@ -84,6 +83,17 @@ describe("prospect filters", () => {
 
     expect(businessMatchesProspectQuery(business, "booking friction")).toBe(true);
     expect(businessMatchesProspectQuery(business, "after hours")).toBe(true);
+  });
+
+  it("matches score labels, tier keys, and score numbers for reviewer triage", () => {
+    const topProspect = prospect({ voiceAiScore: 9 });
+    const promisingProspect = prospect({ voiceAiScore: 6 });
+
+    expect(businessMatchesProspectQuery(topProspect, "highest priority")).toBe(true);
+    expect(businessMatchesProspectQuery(topProspect, "highest_priority")).toBe(true);
+    expect(businessMatchesProspectQuery(topProspect, "score 9")).toBe(true);
+    expect(businessMatchesProspectQuery(promisingProspect, "promising")).toBe(true);
+    expect(businessMatchesProspectQuery(promisingProspect, "highest priority")).toBe(false);
   });
 
   it("matches prospect text without requiring accented characters", () => {
