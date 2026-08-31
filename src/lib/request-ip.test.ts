@@ -49,4 +49,9 @@ describe("getClientIpFromHeaders", () => {
     expect(getClientIpFromHeaders(headers({ "x-forwarded-for": "example.com", "x-real-ip": "" }))).toBe("local");
     expect(getClientIpFromHeaders(headers({ "x-forwarded-for": "999.0.0.1", "x-real-ip": "" }))).toBe("local");
   });
+
+  it("rejects malformed IPv6 candidates instead of creating spoofable buckets", () => {
+    expect(getClientIpFromHeaders(headers({ "x-forwarded-for": "::::", "x-real-ip": "" }))).toBe("local");
+    expect(getClientIpFromHeaders(headers({ "x-forwarded-for": "1:2:3:4:5:6:7:8:9", "x-real-ip": "" }))).toBe("local");
+  });
 });

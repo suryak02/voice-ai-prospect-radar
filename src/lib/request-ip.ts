@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 const FALLBACK_CLIENT_IP = "local";
 
 export function getClientIpFromHeaders(headers: Pick<Headers, "get">): string {
@@ -47,20 +49,9 @@ function stripForwardedPort(value: string): string {
 }
 
 function isValidIpv4(value: string): boolean {
-  const parts = value.split(".");
-  return (
-    parts.length === 4 &&
-    parts.every((part) => {
-      if (!/^\d{1,3}$/.test(part)) return false;
-      const octet = Number(part);
-      return octet >= 0 && octet <= 255;
-    })
-  );
+  return isIP(value) === 4;
 }
 
 function isSafeIpv6Candidate(value: string): boolean {
-  if (!value.includes(":")) return false;
-  const [address, zone] = value.split("%", 2);
-  if (zone && !/^[a-z0-9._-]+$/i.test(zone)) return false;
-  return /^[0-9a-f:.]+$/i.test(address) && /[0-9a-f]/i.test(address);
+  return isIP(value) === 6;
 }
