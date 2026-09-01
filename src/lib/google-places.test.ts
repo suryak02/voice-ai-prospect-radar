@@ -195,13 +195,14 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses[0].reasoning).toContain("Visible booking signals");
   });
 
-  it("creates readable stable IDs for accented or punctuation-only place names", async () => {
+  it("creates readable stable IDs for accented, punctuation-only, or long place names", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(
       jsonResponse({
         places: [
           place("google-place-accent-12345678", "Café Santé & Co"),
           place("google-place-symbols-87654321", "!!!"),
+          place("google-place-long-11223344", "North London Emergency Dental and Implant Clinic with Same Day Appointments"),
         ],
       }),
     );
@@ -216,6 +217,7 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses.map((business) => business.id)).toEqual([
       "cafe-sante-and-co-12345678",
       "prospect-87654321",
+      "north-london-emergency-dental-and-implant-clinic-with-same-day-appoint-11223344",
     ]);
   });
 
