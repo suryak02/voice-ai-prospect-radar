@@ -68,6 +68,7 @@ export function calculateVoiceAiScore(input: ScoreInput): ScoreResult {
 }
 
 export function clampScore(score: number): number {
+  if (!Number.isFinite(score)) return 0;
   return Math.max(0, Math.min(9, score));
 }
 

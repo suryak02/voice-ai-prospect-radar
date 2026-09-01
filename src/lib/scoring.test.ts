@@ -70,6 +70,8 @@ describe("score presentation helpers", () => {
     expect(clampScore(-3)).toBe(0);
     expect(clampScore(4)).toBe(4);
     expect(clampScore(12)).toBe(9);
+    expect(clampScore(Number.NaN)).toBe(0);
+    expect(clampScore(Number.POSITIVE_INFINITY)).toBe(0);
   });
 
   it("maps scores to stable tier keys for analytics and UI summaries", () => {
