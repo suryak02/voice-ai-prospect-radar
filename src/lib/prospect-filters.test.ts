@@ -106,6 +106,13 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(business, "deja vu")).toBe(true);
   });
 
+  it("treats ampersands as and when reviewers search business names", () => {
+    const business = prospect({ name: "A&B Dental Studio" });
+
+    expect(normalizeProspectSearchQuery("A and B dental")).toBe("a and b dental");
+    expect(businessMatchesProspectQuery(business, "a and b dental")).toBe(true);
+  });
+
   it("matches multi-term queries across different prospect fields", () => {
     expect(businessMatchesProspectQuery(businesses[0], "dental canary")).toBe(true);
     expect(businessMatchesProspectQuery(businesses[0], "canary-wharf dental")).toBe(true);
