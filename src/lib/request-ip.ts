@@ -32,6 +32,7 @@ function normalizeClientIp(value: string | null): string | undefined {
   let normalized = value?.trim();
   if (!normalized || normalized.toLowerCase() === "unknown") return undefined;
 
+  normalized = normalized.replace(/^"|"$/g, "");
   normalized = stripForwardedPort(normalized);
 
   // Accept ordinary IPv4/IPv6 values plus provider-added zone identifiers,

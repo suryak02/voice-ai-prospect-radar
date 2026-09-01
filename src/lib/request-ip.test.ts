@@ -45,6 +45,13 @@ describe("getClientIpFromHeaders", () => {
     );
   });
 
+  it("accepts quoted proxy IP values before assigning rate-limit buckets", () => {
+    expect(getClientIpFromHeaders(headers({ "x-forwarded-for": '"198.51.100.7"', "x-real-ip": "" }))).toBe(
+      "198.51.100.7",
+    );
+    expect(getClientIpFromHeaders(headers({ "x-real-ip": '"2001:db8::2"' }))).toBe("2001:db8::2");
+  });
+
   it("rejects hostnames and malformed IPv4 values from client-controlled headers", () => {
     expect(getClientIpFromHeaders(headers({ "x-forwarded-for": "example.com", "x-real-ip": "" }))).toBe("local");
     expect(getClientIpFromHeaders(headers({ "x-forwarded-for": "999.0.0.1", "x-real-ip": "" }))).toBe("local");
