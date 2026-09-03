@@ -290,9 +290,13 @@ function buildReasoning(input: {
   reviewCount?: number;
   rating?: number;
 }): string {
-  const categoryLabel = CATEGORY_META[input.category].label;
+  const config = CATEGORY_META[input.category];
+  const categoryLabel = config.label;
+  const categoryFitReason = config.appointmentBased
+    ? `${categoryLabel} is an appointment-led vertical worth evaluating for Voice AI.`
+    : `${categoryLabel} is a lower-fit customer-service workflow that needs call-volume validation before outreach.`;
   const parts = [
-    `${categoryLabel} is an appointment-led vertical worth evaluating for Voice AI.`,
+    categoryFitReason,
     input.hasVisiblePhone ? "A public phone number indicates a live call path." : "No public phone was found, lowering confidence.",
     input.hasOnlineBooking ? "Visible booking signals reduce urgency but keep reminder/call-cover use cases." : "No obvious booking signal was found, so scheduling friction is plausible.",
   ];

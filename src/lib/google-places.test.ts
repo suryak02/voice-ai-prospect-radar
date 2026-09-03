@@ -195,6 +195,33 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses[0].reasoning).toContain("Visible booking signals");
   });
 
+  it("uses category-specific reasoning for lower-fit contrast categories", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          {
+            ...place("place-retail-contrast", "High Street Retail Shop"),
+            types: ["store"],
+          },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Reasoning Contrast Test Town",
+      categories: ["retail"],
+    });
+
+    expect(result.businesses[0]).toMatchObject({
+      category: "retail",
+    });
+    expect(result.businesses[0].reasoning).toContain("Retail (contrast) is a lower-fit customer-service workflow");
+    expect(result.businesses[0].reasoning).not.toContain("appointment-led vertical");
+  });
+
   it("creates readable stable IDs for accented, punctuation-only, or long place names", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(
