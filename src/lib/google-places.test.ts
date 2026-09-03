@@ -73,10 +73,22 @@ describe("searchGooglePlacesProspects", () => {
       textQuery: "plumber in Pagination Test Town A",
       maxResultCount: 20,
       regionCode: "GB",
+      locationRestriction: {
+        rectangle: {
+          low: { latitude: 49.8, longitude: -8.65 },
+          high: { latitude: 60.9, longitude: 1.77 },
+        },
+      },
     });
     expect(requestBody(fetchMock, 1)).toMatchObject({
       textQuery: "plumber in Pagination Test Town A",
       pageToken: "token-page-2",
+      locationRestriction: {
+        rectangle: {
+          low: { latitude: 49.8, longitude: -8.65 },
+          high: { latitude: 60.9, longitude: 1.77 },
+        },
+      },
     });
   });
 
