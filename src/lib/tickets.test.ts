@@ -29,6 +29,8 @@ describe("ticket pipeline helpers", () => {
     expect(normalizeTicketStatus("reviewed")).toBe("contacted");
     expect(normalizeTicketStatus("rejected")).toBe("lost");
     expect(normalizeTicketStatus("open")).toBe("open");
+    expect(normalizeTicketStatus(" Contacted ")).toBe("contacted");
+    expect(normalizeTicketStatus("WON")).toBe("won");
   });
 
   it("normalizes malformed ticket scores before aggregating metrics", () => {

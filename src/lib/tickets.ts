@@ -45,9 +45,10 @@ const TICKET_STATUS_DISPLAY_LABELS: Record<TicketPipelineStatus, string> = {
 };
 
 export function normalizeTicketStatus(status: string): TicketPipelineStatus {
-  if (status === "reviewed") return "contacted";
-  if (status === "rejected") return "lost";
-  if ((TICKET_STATUS_VALUES as readonly string[]).includes(status)) return status as TicketPipelineStatus;
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "reviewed") return "contacted";
+  if (normalized === "rejected") return "lost";
+  if ((TICKET_STATUS_VALUES as readonly string[]).includes(normalized)) return normalized as TicketPipelineStatus;
   return "open";
 }
 
