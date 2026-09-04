@@ -207,6 +207,59 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses[0].reasoning).toContain("Visible booking signals");
   });
 
+  it("does not treat a Facebook profile URL as an online booking signal", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          {
+            ...place("place-facebook-profile", "Social Dental Studio"),
+            websiteUri: "https://www.facebook.com/social-dental-studio",
+            types: ["dentist"],
+          },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Facebook Link Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses[0]).toMatchObject({
+      hasOnlineBooking: false,
+    });
+    expect(result.businesses[0].reasoning).toContain("No obvious booking signal was found");
+  });
+
+  it("still recognises explicit booking paths on ordinary business websites", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          {
+            ...place("place-book-path", "Book Path Dental"),
+            websiteUri: "https://book-path-dental.example.com/patients/book-appointment",
+            types: ["dentist"],
+          },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Booking Path Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses[0]).toMatchObject({
+      hasOnlineBooking: true,
+    });
+  });
+
   it("uses category-specific reasoning for lower-fit contrast categories", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(

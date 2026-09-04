@@ -253,10 +253,7 @@ function inferAreaLabel(address: string, requestedArea: string): string {
 function inferOnlineBooking(websiteUri?: string): boolean {
   if (!websiteUri) return false;
   const normalized = websiteUri.toLowerCase();
-  return [
-    "book",
-    "booking",
-    "appoint",
+  const bookingPlatforms = [
     "acuityscheduling",
     "booksy",
     "calendly",
@@ -272,7 +269,16 @@ function inferOnlineBooking(websiteUri?: string): boolean {
     "simplybook",
     "treatwell",
     "zocdoc",
-  ].some((token) => normalized.includes(token));
+  ];
+
+  if (bookingPlatforms.some((token) => normalized.includes(token))) return true;
+
+  // Treat booking words as URL path/query tokens, not arbitrary substrings: a
+  // Facebook profile is useful contact context, but "facebook" must not count
+  // as an online-booking signal and lower an otherwise urgent prospect score.
+  return /(?:^|[^a-z0-9])(?:book|booking|bookings|appoint|appointment|appointments)(?:[^a-z0-9]|$)/.test(
+    normalized,
+  );
 }
 
 function inferReviewPainSignals(reviewCount?: number, rating?: number): string[] {
