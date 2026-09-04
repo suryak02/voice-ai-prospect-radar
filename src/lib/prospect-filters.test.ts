@@ -128,6 +128,13 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(business, "platinum-dental.example")).toBe(true);
   });
 
+  it("matches UK phone numbers that include the optional trunk prefix", () => {
+    const business = prospect({ phone: "+44 (0)20 7946 0123" });
+
+    expect(businessMatchesProspectQuery(business, "020 7946 0123")).toBe(true);
+    expect(businessMatchesProspectQuery(business, "+44 20 7946 0123")).toBe(true);
+  });
+
   it("combines text, vertical, and minimum score filters", () => {
     expect(
       filterProspects(businesses, {

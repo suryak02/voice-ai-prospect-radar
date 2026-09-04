@@ -86,6 +86,11 @@ function normalizeDigits(value: string) {
 function getPhoneNumberVariants(digits: string) {
   const variants = new Set([digits]);
 
+  if (digits.startsWith("440") && digits.length > 5) {
+    variants.add(`0${digits.slice(3)}`);
+    variants.add(`44${digits.slice(3)}`);
+  }
+
   if (digits.startsWith("44") && digits.length > 4) {
     variants.add(`0${digits.slice(2)}`);
   }
