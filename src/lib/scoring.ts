@@ -73,10 +73,11 @@ export function clampScore(score: number): number {
 }
 
 export function getScoreTier(score: number): ScoreTier {
-  if (score >= 9) return "highest_priority";
-  if (score >= 7) return "strong_candidate";
-  if (score >= 5) return "promising";
-  if (score >= 3) return "low_priority";
+  const normalizedScore = clampScore(score);
+  if (normalizedScore >= 9) return "highest_priority";
+  if (normalizedScore >= 7) return "strong_candidate";
+  if (normalizedScore >= 5) return "promising";
+  if (normalizedScore >= 3) return "low_priority";
   return "poor_fit";
 }
 
@@ -93,21 +94,23 @@ export function getScoreLabel(score: number): string {
 }
 
 export function getScoreColorClasses(score: number): string {
-  if (score >= 9) return "bg-fuchsia-500 text-white ring-fuchsia-300/30 shadow-[0_0_34px_rgba(217,70,239,0.35)]";
-  if (score >= 7) return "bg-rose-500 text-white ring-rose-300/30 shadow-[0_0_28px_rgba(244,63,94,0.32)]";
-  if (score >= 5) return "bg-amber-400 text-slate-950 ring-amber-200/40 shadow-[0_0_26px_rgba(251,191,36,0.24)]";
-  if (score >= 3) return "bg-sky-500 text-white ring-sky-300/30 shadow-[0_0_24px_rgba(14,165,233,0.28)]";
+  const normalizedScore = clampScore(score);
+  if (normalizedScore >= 9) return "bg-fuchsia-500 text-white ring-fuchsia-300/30 shadow-[0_0_34px_rgba(217,70,239,0.35)]";
+  if (normalizedScore >= 7) return "bg-rose-500 text-white ring-rose-300/30 shadow-[0_0_28px_rgba(244,63,94,0.32)]";
+  if (normalizedScore >= 5) return "bg-amber-400 text-slate-950 ring-amber-200/40 shadow-[0_0_26px_rgba(251,191,36,0.24)]";
+  if (normalizedScore >= 3) return "bg-sky-500 text-white ring-sky-300/30 shadow-[0_0_24px_rgba(14,165,233,0.28)]";
   return "bg-slate-600 text-white ring-slate-300/20 shadow-[0_0_18px_rgba(148,163,184,0.18)]";
 }
 
 export function getScorePillClasses(score: number): string {
-  if (score >= 9) return "border-fuchsia-400/30 bg-fuchsia-400/10 text-fuchsia-100";
-  if (score >= 7) return "border-rose-400/30 bg-rose-400/10 text-rose-100";
-  if (score >= 5) return "border-amber-300/30 bg-amber-300/10 text-amber-100";
-  if (score >= 3) return "border-sky-400/30 bg-sky-400/10 text-sky-100";
+  const normalizedScore = clampScore(score);
+  if (normalizedScore >= 9) return "border-fuchsia-400/30 bg-fuchsia-400/10 text-fuchsia-100";
+  if (normalizedScore >= 7) return "border-rose-400/30 bg-rose-400/10 text-rose-100";
+  if (normalizedScore >= 5) return "border-amber-300/30 bg-amber-300/10 text-amber-100";
+  if (normalizedScore >= 3) return "border-sky-400/30 bg-sky-400/10 text-sky-100";
   return "border-white/10 bg-white/[0.04] text-slate-200";
 }
 
 export function isPriorityProspectScore(score: number): boolean {
-  return score >= 7;
+  return clampScore(score) >= 7;
 }

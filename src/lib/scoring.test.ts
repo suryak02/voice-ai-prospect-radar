@@ -82,6 +82,14 @@ describe("score presentation helpers", () => {
     expect(getScoreTier(9)).toBe("highest_priority");
   });
 
+  it("normalizes invalid presentation scores before choosing tiers and priority flags", () => {
+    expect(getScoreTier(Number.POSITIVE_INFINITY)).toBe("poor_fit");
+    expect(getScoreTier(Number.NaN)).toBe("poor_fit");
+    expect(getScoreColorClasses(Number.POSITIVE_INFINITY)).toContain("bg-slate-600");
+    expect(getScorePillClasses(Number.NaN)).toContain("border-white/10");
+    expect(isPriorityProspectScore(Number.POSITIVE_INFINITY)).toBe(false);
+  });
+
   it("labels scores in human-friendly prospect tiers", () => {
     expect(getScoreLabel(1)).toBe("Poor fit");
     expect(getScoreLabel(4)).toBe("Low priority");
