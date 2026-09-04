@@ -179,6 +179,34 @@ describe("searchGooglePlacesProspects", () => {
     });
   });
 
+  it("ignores non-web website values before scoring live prospects", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      jsonResponse({
+        places: [
+          {
+            ...place("place-non-web-url", "Non Web Dental"),
+            websiteUri: "mailto:frontdesk@example.com",
+            googleMapsUri: " https://maps.google.com/?cid=non-web-url ",
+          },
+        ],
+      }),
+    );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Non Web URL Test Town",
+      categories: ["dental"],
+    });
+
+    expect(result.businesses[0]).toMatchObject({
+      website: "https://maps.google.com/?cid=non-web-url",
+      hasWebsite: false,
+      hasOnlineBooking: false,
+    });
+  });
+
   it("detects common booking-platform website URLs as online booking signals", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(

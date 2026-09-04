@@ -177,8 +177,8 @@ function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, are
   const address = optionalText(place.formattedAddress) ?? area;
   const nationalPhoneNumber = optionalText(place.nationalPhoneNumber);
   const internationalPhoneNumber = optionalText(place.internationalPhoneNumber);
-  const websiteUri = optionalText(place.websiteUri);
-  const googleMapsUri = optionalText(place.googleMapsUri);
+  const websiteUri = optionalWebUrl(place.websiteUri);
+  const googleMapsUri = optionalWebUrl(place.googleMapsUri);
   const category = inferCategoryFromText(`${(place.types ?? []).join(" ")} ${name}`, requestedCategory);
   const config = CATEGORY_META[category];
   const hasWebsite = Boolean(websiteUri);
@@ -226,6 +226,19 @@ function toBusiness(place: GooglePlace, requestedCategory: BusinessCategory, are
 function optionalText(value?: string): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function optionalWebUrl(value?: string): string | undefined {
+  const trimmed = optionalText(value);
+  if (!trimmed) return undefined;
+
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return undefined;
+  }
 }
 
 function placeHasUsableCoordinates(place: GooglePlace): place is GooglePlace & {
