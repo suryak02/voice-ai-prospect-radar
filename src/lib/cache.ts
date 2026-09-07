@@ -32,6 +32,8 @@ export async function setCache<T>(key: string, value: T, ttlSeconds: number): Pr
   if (redis) {
     try {
       await redis.set(key, value, { ex: ttlSeconds });
+      // A prior fallback must not outlive a newer successful Redis write.
+      memoryCache.delete(key);
       return;
     } catch (error) {
       console.error("Redis cache write failed; using in-memory cache.", error);
