@@ -92,6 +92,22 @@ describe("searchGooglePlacesProspects", () => {
     });
   });
 
+  it("stops when Google repeats a pagination token instead of requesting the same page again", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    process.env.PLACES_SEARCH_PAGE_LIMIT = "3";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ places: [place("repeat-first", "First Plumbing")], nextPageToken: "repeat-token" }))
+      .mockResolvedValue(jsonResponse({ places: [place("repeat-second", "Second Plumbing")], nextPageToken: "repeat-token" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({ area: "Repeated Token Test Town", categories: ["plumber"] });
+
+    expect(result.businesses.map((business) => business.googlePlaceId)).toEqual(["repeat-first", "repeat-second"]);
+    expect(result.errors).toEqual([]);
+    expect(requestBody(fetchMock, 1).pageToken).toBe("repeat-token");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("caps live search pagination at three pages per vertical", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     process.env.PLACES_SEARCH_PAGE_LIMIT = "99";

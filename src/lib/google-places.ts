@@ -128,12 +128,14 @@ export async function searchGooglePlacesProspects(
 
 async function searchPlaces(apiKey: string, textQuery: string, pageLimit: number): Promise<GooglePlace[]> {
   const places: GooglePlace[] = [];
+  const seenPageTokens = new Set<string>();
   let pageToken: string | undefined;
 
   for (let page = 0; page < pageLimit; page += 1) {
     const data = await searchPlacesPage(apiKey, textQuery, pageToken);
     places.push(...(data.places ?? []));
-    if (!data.nextPageToken) break;
+    if (!data.nextPageToken || seenPageTokens.has(data.nextPageToken)) break;
+    seenPageTokens.add(data.nextPageToken);
     pageToken = data.nextPageToken;
   }
 
