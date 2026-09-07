@@ -64,6 +64,12 @@ export function businessMatchesProspectQuery(business: Business, query: string) 
     return true;
   }
 
+  // Phone normalization must not silently discard unmatched names or areas.
+  const textTokens = queryTokens.filter((token) => /[a-z]/.test(token));
+  if (!textTokens.every((token) => searchableText.some((value) => value.includes(token)))) {
+    return false;
+  }
+
   const queryDigits = normalizeDigits(normalizedQuery);
   if (queryDigits.length < 3) return false;
 

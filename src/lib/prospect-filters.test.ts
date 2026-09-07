@@ -128,6 +128,22 @@ describe("prospect filters", () => {
     expect(businessMatchesProspectQuery(business, "platinum-dental.example")).toBe(true);
   });
 
+  it("does not discard unmatched words when falling back to phone-number matching", () => {
+    const business = prospect({ phone: "+44 20 7946 0123" });
+
+    expect(businessMatchesProspectQuery(business, "legal 02079460123")).toBe(false);
+    expect(businessMatchesProspectQuery(business, "manchester 020 7946 0123")).toBe(false);
+    expect(businessMatchesProspectQuery(business, "dental 02079460123")).toBe(true);
+    expect(businessMatchesProspectQuery(business, "london 020 7946 0123")).toBe(true);
+  });
+
+  it("does not reduce an unmatched alphanumeric area to digits", () => {
+    const business = prospect({ phone: "+44 20 7946 0123" });
+
+    expect(businessMatchesProspectQuery(business, "ZZ0123")).toBe(false);
+    expect(businessMatchesProspectQuery(business, "0123")).toBe(true);
+  });
+
   it("matches UK phone numbers that include the optional trunk prefix", () => {
     const business = prospect({ phone: "+44 (0)20 7946 0123" });
 
