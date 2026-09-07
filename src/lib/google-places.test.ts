@@ -207,6 +207,37 @@ describe("searchGooglePlacesProspects", () => {
     });
   });
 
+  it.each([
+    "https://clinic.example.com/patients/",
+    "https://clinic.example.com/?redirect=/patients/",
+    "https://clinic.example.com/#/patients/",
+  ])("preserves significant trailing slashes in website URL %s", async (websiteUri) => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse({
+      places: [{ ...place("place-url-slash", "URL Dental"), websiteUri }],
+    })));
+
+    const result = await searchGooglePlacesProspects({
+      area: `URL Preservation Test ${websiteUri}`,
+      categories: ["dental"],
+    });
+
+    expect(result.businesses[0].website).toBe(websiteUri);
+  });
+
+  it("preserves the full Maps fallback URL when no website is available", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const googleMapsUri = "https://maps.google.com/maps/place/example/";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse({
+      places: [{ ...place("place-maps-slash", "Maps Dental"), websiteUri: "", googleMapsUri }],
+    })));
+
+    const result = await searchGooglePlacesProspects({ area: "Maps URL Preservation Test", categories: ["dental"] });
+
+    expect(result.businesses[0].website).toBe(googleMapsUri);
+    expect(result.businesses[0].hasWebsite).toBe(false);
+  });
+
   it("detects common booking-platform website URLs as online booking signals", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn().mockResolvedValueOnce(

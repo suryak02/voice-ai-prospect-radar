@@ -235,7 +235,7 @@ function optionalWebUrl(value?: string): string | undefined {
   try {
     const url = new URL(trimmed);
     if (url.protocol !== "http:" && url.protocol !== "https:") return undefined;
-    return url.toString().replace(/\/$/, "");
+    return url.toString();
   } catch {
     return undefined;
   }
