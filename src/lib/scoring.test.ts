@@ -50,6 +50,40 @@ describe("calculateVoiceAiScore", () => {
     expect(result.breakdown.categoryFit).toBe(0);
   });
 
+  it.each([
+    [0, 0],
+    [99, 0],
+    [100, 1],
+    [399, 1],
+    [400, 2],
+  ])("assigns %i reviews the expected demand-proxy points", (reviewCount, businessValue) => {
+    const result = calculateVoiceAiScore({ ...baseInput, reviewCount });
+
+    expect(result.breakdown.businessValue).toBe(businessValue);
+  });
+
+  it("distinguishes a known zero review count from missing review data", () => {
+    const noReviews = calculateVoiceAiScore({ ...baseInput, reviewCount: 0 });
+    const unknownReviews = calculateVoiceAiScore({ ...baseInput, reviewCount: undefined });
+
+    expect(noReviews.breakdown.businessValue).toBe(0);
+    expect(unknownReviews.breakdown.businessValue).toBe(0);
+    expect(noReviews.breakdown.confidencePenalty).toBeCloseTo(0);
+    expect(unknownReviews.breakdown.confidencePenalty).toBe(-1);
+    expect(noReviews.score).toBe(unknownReviews.score + 1);
+  });
+
+  it.each([
+    [{ hasWebsite: false }, -1],
+    [{ hasVisiblePhone: false }, -1],
+    [{ hasWebsite: false, hasVisiblePhone: false }, -2],
+    [{ hasWebsite: false, hasVisiblePhone: false, reviewCount: undefined }, -2],
+  ])("caps the confidence penalty for missing public signals %j", (missingSignals, expectedPenalty) => {
+    const result = calculateVoiceAiScore({ ...baseInput, ...missingSignals });
+
+    expect(result.breakdown.confidencePenalty).toBe(expectedPenalty);
+  });
+
   it("penalizes weak public data so the score is not overconfident", () => {
     const withMissingSignals = calculateVoiceAiScore({
       ...baseInput,
