@@ -112,6 +112,19 @@ describe("buildProspectContextFromBusiness", () => {
     expect(reviewProxySignals.map((signal) => signal.confidence)).toContain("weak");
   });
 
+  it.each([undefined, "", "not-a-date"])("keeps context usable with missing or invalid enrichment timestamp %s", (aiEnrichedAt) => {
+    const context = buildProspectContextFromBusiness(prospect({ aiEnrichedAt }));
+
+    expect(context.generatedAt).toBeNull();
+    expect(context.generatedClaims.some((claim) => claim.kind === "ai_summary")).toBe(true);
+  });
+
+  it("normalizes an enrichment timestamp with a timezone offset to UTC", () => {
+    const context = buildProspectContextFromBusiness(prospect({ aiEnrichedAt: "2026-06-09T10:00:00+01:00" }));
+
+    expect(context.generatedAt).toBe("2026-06-09T09:00:00.000Z");
+  });
+
   it("passes the exported schema validation", () => {
     const context = buildProspectContextFromBusiness(prospect());
 

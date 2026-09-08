@@ -104,13 +104,15 @@ export function buildProspectContextFromBusiness(business: Business): ProspectCo
   const evidence = buildEvidenceSnippets(business);
   const evidenceIds = new Set(evidence.map((snippet) => snippet.id));
   const generatedClaims = downgradeUnsupportedClaims(buildGeneratedClaims(business, evidenceIds));
+  const timestamp = z.string().datetime({ offset: true }).safeParse(business.aiEnrichedAt);
+  const generatedAt = timestamp.success ? new Date(timestamp.data).toISOString() : null;
 
   return ProspectContextSchema.parse({
     version: PROSPECT_CONTEXT_VERSION,
     businessId: business.id,
     businessName: business.name,
     category: business.category,
-    generatedAt: business.aiEnrichedAt ?? null,
+    generatedAt,
     depth: business.aiDepth === "deep" ? "deep" : business.aiDepth === "standard" ? "standard" : "deterministic",
     evidence,
     services: [],
