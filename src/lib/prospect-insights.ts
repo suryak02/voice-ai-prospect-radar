@@ -1,12 +1,16 @@
 import { CATEGORY_META } from "./categories";
-import { getScoreLabel } from "./scoring";
+import { getScoreLabel, getScoreTier } from "./scoring";
 import type { Business } from "./types";
 
 export function buildSpecificReasoning(business: Business): string[] {
   const copy = CATEGORY_META[business.category].copy;
   const parts: string[] = [];
 
-  parts.push(`${business.name} scores ${business.voiceAiScore}/9 (${getScoreLabel(business.voiceAiScore).toLowerCase()}) because the public signals point to a realistic front-desk automation use case, not just a generic lead.`);
+  const tier = getScoreTier(business.voiceAiScore);
+  const fitReason = tier === "poor_fit" || tier === "low_priority"
+    ? "the public signals suggest limited front-desk automation fit; validate call volume and workflow needs before prioritising outreach."
+    : "the public signals point to a realistic front-desk automation use case, not just a generic lead.";
+  parts.push(`${business.name} scores ${business.voiceAiScore}/9 (${getScoreLabel(business.voiceAiScore).toLowerCase()}) because ${fitReason}`);
   parts.push(copy.buyer);
 
   if (business.hasVisiblePhone && business.phone) {
