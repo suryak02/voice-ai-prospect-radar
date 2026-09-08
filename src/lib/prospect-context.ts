@@ -98,7 +98,7 @@ export const ProspectContextSchema = z.object({
 
 export type ProspectContext = z.infer<typeof ProspectContextSchema>;
 
-const bookingTokens = ["book", "booking", "appoint", "cliniko", "doctify", "dentally", "zocdoc", "resdiary", "opentable"];
+const bookingPlatforms = ["cliniko", "doctify", "dentally", "zocdoc", "resdiary", "opentable"];
 
 export function buildProspectContextFromBusiness(business: Business): ProspectContext {
   const evidence = buildEvidenceSnippets(business);
@@ -480,7 +480,11 @@ function formatScoreBreakdown(breakdown: ScoreBreakdown): string {
 function findBookingToken(value?: string): string | undefined {
   if (!value) return undefined;
   const normalized = value.toLowerCase();
-  return bookingTokens.find((token) => normalized.includes(token));
+  // A stored booking flag does not make "facebook" or "notebook" URL evidence.
+  const bookingWord = normalized.match(
+    /(?:^|[^a-z0-9])(book|booking|bookings|appoint|appointment|appointments)(?:[^a-z0-9]|$)/,
+  )?.[1];
+  return bookingWord ?? bookingPlatforms.find((token) => normalized.includes(token));
 }
 
 function normalizeHttpUrl(value: string): string | undefined {

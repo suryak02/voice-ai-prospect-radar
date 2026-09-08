@@ -125,6 +125,35 @@ describe("buildProspectContextFromBusiness", () => {
     expect(bookingSignal.label.toLowerCase()).not.toContain("no online booking exists");
   });
 
+  it.each([
+    "https://www.facebook.com/example-clinic",
+    "https://clinic.example.com/notebook",
+    "https://clinic.example.com/bookkeeper",
+  ])("does not invent booking URL evidence from a substring in %s", (website) => {
+    const context = buildProspectContextFromBusiness(prospect({ website, hasOnlineBooking: true }));
+    const evidence = context.evidence.find((snippet) => snippet.id === "scoring:online-booking");
+
+    expect(context.bookingSignals[0]).toMatchObject({ type: "booking_signal_detected", confidence: "inferred" });
+    expect(context.bookingSignals[0].value).toBeUndefined();
+    expect(evidence?.text).toContain("no source snippet is stored yet");
+  });
+
+  it.each([
+    ["https://clinic.example.com/BOOK", "book"],
+    ["https://clinic.example.com/booking", "booking"],
+    ["https://clinic.example.com/bookings", "bookings"],
+    ["https://clinic.example.com/appointments", "appointments"],
+    ["https://clinic.example.com/?action=appointment", "appointment"],
+    ["https://example.cliniko.com/", "cliniko"],
+  ])("identifies the complete booking token in %s", (website, token) => {
+    const context = buildProspectContextFromBusiness(prospect({ website, hasOnlineBooking: true }));
+
+    expect(context.bookingSignals[0]).toMatchObject({
+      type: "booking_url_token", value: token, confidence: "inferred",
+    });
+    expect(context.evidence.find((snippet) => snippet.id === "scoring:online-booking")?.text).toContain(`("${token}")`);
+  });
+
   it("does not mark review proxy pain hypotheses as supported", () => {
     const context = buildProspectContextFromBusiness(prospect());
     const reviewProxySignals = context.painHypotheses.filter((signal) =>
