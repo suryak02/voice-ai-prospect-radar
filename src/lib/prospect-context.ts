@@ -485,7 +485,9 @@ function findBookingToken(value?: string): string | undefined {
 
 function normalizeHttpUrl(value: string): string | undefined {
   try {
-    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+    const trimmed = value.trim();
+    const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed);
+    const url = new URL(hasScheme ? trimmed : `https://${trimmed}`);
     return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
   } catch {
     return undefined;

@@ -71,6 +71,30 @@ describe("buildProspectContextFromBusiness", () => {
     );
   });
 
+  it.each([
+    "mailto:frontdesk@example.com",
+    "ftp://files.example.com/",
+    "javascript:alert(1)",
+    "data:text/plain,example",
+  ])("does not turn non-web website value %s into an HTTPS evidence link", (website) => {
+    const context = buildProspectContextFromBusiness(prospect({ website }));
+    const evidence = context.evidence.find((snippet) => snippet.id === "places:website");
+
+    expect(evidence).toBeDefined();
+    expect(evidence?.url).toBeUndefined();
+    expect(evidence?.text).toContain(website);
+  });
+
+  it.each([
+    ["  https://clinic.example.com/patients/  ", "https://clinic.example.com/patients/"],
+    ["HTTP://clinic.example.com/book?next=/patients/", "http://clinic.example.com/book?next=/patients/"],
+    ["clinic.example.com/patients/", "https://clinic.example.com/patients/"],
+  ])("normalizes web evidence link %s without losing its path", (website, expectedUrl) => {
+    const context = buildProspectContextFromBusiness(prospect({ website }));
+
+    expect(context.evidence.find((snippet) => snippet.id === "places:website")?.url).toBe(expectedUrl);
+  });
+
   it("creates weak missing-signal entries when phone and website are absent", () => {
     const context = buildProspectContextFromBusiness(
       prospect({
