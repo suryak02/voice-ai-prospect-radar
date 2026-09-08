@@ -121,6 +121,29 @@ describe("buildReceptionistSandboxBrief", () => {
     );
   });
 
+  it("excludes weak, unsupported, and unreferenced claims from both exported claims and scenario evidence", () => {
+    const business = prospect();
+    const context = buildProspectContextFromBusiness(business);
+    const claim = context.generatedClaims[0];
+    context.generatedClaims = [
+      { ...claim, id: "claim:supported", confidence: "supported" },
+      { ...claim, id: "claim:inferred", confidence: "inferred" },
+      { ...claim, id: "claim:weak", confidence: "weak" },
+      { ...claim, id: "claim:unsupported", confidence: "unsupported" },
+      { ...claim, id: "claim:no-evidence", confidence: "supported", evidenceIds: [] },
+    ];
+    const original = structuredClone(context);
+
+    const brief = buildReceptionistSandboxBrief(business, context);
+
+    expect(brief.prospectContext.claims.map(({ id }) => id)).toEqual(["claim:supported", "claim:inferred"]);
+    for (const seed of brief.scenarioSeeds) {
+      expect(seed.evidenceBasis).toContain("Usable claim IDs: claim:supported, claim:inferred.");
+      expect(seed.evidenceBasis.join(" ")).not.toMatch(/claim:(weak|unsupported|no-evidence)/);
+    }
+    expect(context).toEqual(original);
+  });
+
   it("passes schema validation", () => {
     const brief = briefFor();
 
