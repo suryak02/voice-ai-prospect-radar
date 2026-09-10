@@ -26,6 +26,31 @@ afterEach(() => {
 });
 
 describe("cache fallback", () => {
+  it.each([{ value: false }, { value: 0 }, { value: "" }, { value: [] }])(
+    "prefers a Redis hit over older fallback data even for $value",
+    async ({ value }) => {
+      const { getCache, setCache } = await cache();
+      await setCache("prospects", ["older fallback"], 60);
+      getRedis.mockReturnValue(redis);
+      redis.get.mockResolvedValue(value);
+
+      await expect(getCache("prospects")).resolves.toEqual({ value, source: "redis" });
+      expect(redis.get).toHaveBeenCalledWith("prospects");
+    },
+  );
+
+  it("uses unexpired fallback data on a Redis miss without extending its lifetime", async () => {
+    const { getCache, setCache } = await cache();
+    await setCache("prospects", ["fallback"], 60);
+    getRedis.mockReturnValue(redis);
+    redis.get.mockResolvedValue(null);
+
+    vi.advanceTimersByTime(59_999);
+    await expect(getCache("prospects")).resolves.toEqual({ value: ["fallback"], source: "memory" });
+    vi.advanceTimersByTime(1);
+    await expect(getCache("prospects")).resolves.toEqual({ value: null, source: "miss" });
+  });
+
   it("expires fallback data at the exact TTL boundary", async () => {
     const { getCache, setCache } = await cache();
     await setCache("prospects", ["saved"], 60);
