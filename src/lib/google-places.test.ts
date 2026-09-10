@@ -410,6 +410,48 @@ describe("searchGooglePlacesProspects", () => {
     expect(result.businesses.map((business) => business.googlePlaceId)).toEqual(["place-with-coordinates"]);
   });
 
+  it("excludes closed, unidentified, and non-UK places from live prospect results", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse({
+      places: [
+        place("quality-open", "Open Plumbing"),
+        { ...place("quality-unknown", "Unknown Status Plumbing"), businessStatus: undefined },
+        { ...place("quality-temporary", "Temporary Closure Plumbing"), businessStatus: "CLOSED_TEMPORARILY" },
+        { ...place("quality-permanent", "Permanent Closure Plumbing"), businessStatus: "CLOSED_PERMANENTLY" },
+        place("", "Missing ID Plumbing"),
+        { ...place("quality-overseas", "Overseas Plumbing"), location: { latitude: 40.7, longitude: -74 } },
+      ],
+    })));
+
+    const result = await searchGooglePlacesProspects({ area: "Place Quality Test Town", categories: ["plumber"] });
+
+    expect(result.businesses.map((business) => business.googlePlaceId)).toEqual(["quality-open", "quality-unknown"]);
+    expect(result.errors).toEqual([]);
+  });
+
+  it("deduplicates places across verticals without losing a later usable record", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ places: [
+        { ...place("dedup-recovered", "Incomplete Plumbing"), location: undefined },
+        place("dedup-shared", "Shared Plumbing"),
+      ] }))
+      .mockResolvedValueOnce(jsonResponse({ places: [
+        place("dedup-recovered", "Recovered Plumbing"),
+        place("dedup-shared", "Shared Plumbing"),
+      ] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await searchGooglePlacesProspects({
+      area: "Cross Vertical Dedup Test Town", categories: ["plumber", "dental"],
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.businesses.map((business) => business.googlePlaceId)).toEqual(["dedup-shared", "dedup-recovered"]);
+    expect(result.businesses[1].name).toBe("Recovered Plumbing");
+    expect(result.errors).toEqual([]);
+  });
+
   it("reports failed Google Places responses without aborting other verticals", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     const fetchMock = vi.fn()
