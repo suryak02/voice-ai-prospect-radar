@@ -139,18 +139,20 @@ export async function enrichBusiness(input: EnrichInput, opts: { deep?: boolean 
   const content = data.choices?.[0]?.message?.content;
   if (!content) return null;
 
-  let parsed: { summary?: unknown; angle?: unknown; category?: unknown };
+  let parsed: unknown;
   try {
     parsed = JSON.parse(content);
   } catch {
     return null;
   }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
 
-  const summary = typeof parsed.summary === "string" ? parsed.summary.trim() : "";
-  const angle = typeof parsed.angle === "string" ? parsed.angle.trim() : "";
+  const fields = parsed as Record<string, unknown>;
+  const summary = typeof fields.summary === "string" ? fields.summary.trim() : "";
+  const angle = typeof fields.angle === "string" ? fields.angle.trim() : "";
   if (!summary && !angle) return null;
 
-  const rawCategory = typeof parsed.category === "string" ? parsed.category.trim().toLowerCase() : "";
+  const rawCategory = typeof fields.category === "string" ? fields.category.trim().toLowerCase() : "";
   const category = (CATEGORY_VALUES as string[]).includes(rawCategory) ? rawCategory : undefined;
 
   return { summary, angle, category, usedWebsite: Boolean(websiteText) };
