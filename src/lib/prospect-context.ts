@@ -98,7 +98,12 @@ export const ProspectContextSchema = z.object({
 
 export type ProspectContext = z.infer<typeof ProspectContextSchema>;
 
-const bookingPlatforms = ["cliniko", "doctify", "dentally", "zocdoc", "resdiary", "opentable"];
+// Keep URL evidence aligned with the platforms recognized by live Places search.
+const bookingPlatforms = [
+  "acuityscheduling", "booksy", "calendly", "cliniko", "dentally", "doctify",
+  "fresha", "mindbody", "opentable", "phorest", "resdiary", "setmore",
+  "simplybook", "treatwell", "zocdoc",
+];
 
 export function buildProspectContextFromBusiness(business: Business): ProspectContext {
   const evidence = buildEvidenceSnippets(business);

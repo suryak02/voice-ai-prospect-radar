@@ -154,6 +154,27 @@ describe("buildProspectContextFromBusiness", () => {
     expect(context.evidence.find((snippet) => snippet.id === "scoring:online-booking")?.text).toContain(`("${token}")`);
   });
 
+  it.each([
+    ["https://clinic.acuityscheduling.com/", "acuityscheduling"],
+    ["https://booksy.com/en-gb/example", "booksy"],
+    ["https://calendly.com/example", "calendly"],
+    ["https://www.fresha.com/a/example", "fresha"],
+    ["https://www.mindbodyonline.com/explore/example", "mindbody"],
+    ["https://phorest.com/example", "phorest"],
+    ["https://example.setmore.com/", "setmore"],
+    ["https://example.simplybook.me/", "simplybook"],
+    ["https://www.treatwell.co.uk/place/example", "treatwell"],
+  ])("retains the booking-platform evidence already recognized by live search in %s", (website, token) => {
+    const context = buildProspectContextFromBusiness(prospect({ website, hasOnlineBooking: true }));
+
+    expect(context.bookingSignals[0]).toMatchObject({
+      type: "booking_url_token", value: token, confidence: "inferred",
+    });
+    const evidence = context.evidence.find((snippet) => snippet.id === "scoring:online-booking");
+    expect(evidence?.text).toContain(`("${token}")`);
+    expect(evidence?.text).not.toContain("no source snippet is stored yet");
+  });
+
   it("does not mark review proxy pain hypotheses as supported", () => {
     const context = buildProspectContextFromBusiness(prospect());
     const reviewProxySignals = context.painHypotheses.filter((signal) =>
